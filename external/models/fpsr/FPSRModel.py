@@ -31,7 +31,8 @@ class FPSRModel:
         # torch.cuda.manual_seed_all(random_seed)
         # torch.backends.cudnn.deterministic = True
 
-        self.device = 'cpu'
+        # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cpu")  # 'cpu'
 
         # load parameters info
         self.num_users = num_users
@@ -50,10 +51,10 @@ class FPSRModel:
 
         # compute user-item interaction matrix
         self.inter = torch.sparse_coo_tensor(
-            # indices=torch.LongTensor(np.array([self.inter.row, self.inter.col])),
-            indices=torch.LongTensor(self.inter),
-            # values=torch.FloatTensor(self.inter.data),
-            values=torch.ones((self.inter.shape[1], 1)).flatten(),
+            indices=torch.LongTensor(np.array([self.inter.row, self.inter.col])),
+            # indices=torch.LongTensor(self.inter),
+            values=torch.FloatTensor(self.inter.data),
+            # values=torch.ones((self.inter.shape[1], 1)).flatten(),
             size=self.inter.shape, dtype=torch.float
         ).coalesce().to(self.device)
         # Coalescing ensures that there are no duplicate indices in the COO representation

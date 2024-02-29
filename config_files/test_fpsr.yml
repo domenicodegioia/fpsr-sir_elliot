@@ -21,7 +21,7 @@ experiment:
       lr: 0.001
       epochs: 2
       factors: 64
-      batch_size: 1
+      batch_size: 256
       eigen_n: 256
       l_w: 0.2
       rho: 5000
@@ -30,5 +30,4 @@ experiment:
       eta: 1.0
       eps: 4e-3
       tau: 0.3
-      # n_layers: 1
       seed: 123

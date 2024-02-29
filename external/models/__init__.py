@@ -35,32 +35,32 @@ for _backend in sys.modules["external"].backend:
         from .rmg.RMG import RMG
         from .narre.NARRE import NARRE
     elif _backend == "pytorch":
-        from .ngcf.NGCF import NGCF
-        from .lightgcn.LightGCN import LightGCN
-        from .pinsage.PinSage import PinSage
-        from .gat.GAT import GAT
-        from .gcmc.GCMC import GCMC
-        from .disen_gcn.DisenGCN import DisenGCN
-        from .mmgcn.MMGCN import MMGCN
-        from .dgcf.DGCF import DGCF
-        from .egcf.EGCF import EGCF
-        from .lgacn.LGACN import LGACN
-        # from .kgcn.KGCN import KGCN
-        from .gcn.GCN import GCN
-        from .egcfv2.EGCFv2 import EGCFv2
-        from .bprmf.BPRMF import BPRMF
-        from .vbpr.VBPR import VBPR
-        from .grcn.GRCN import GRCN
-        from .mgat.MGAT import MGAT
-        from .lattice.LATTICE import LATTICE
-        from .slattice.SLATTICE import SLATTICE
-        from .uuii.UUII import UUII
-        from .ultragcn import UltraGCN
-        from .gfcf import GFCF
-        from .lrgccf import LRGCCF
-        from .svd_gcn import SVDGCN
-        from .svd_gcn_s import SVDGCNS
-        from .lightgcn_minibatch import LightGCNMiniBatch
-        from .lightgcn_edge import LightGCNEdge
-        from .sgl import SGL
+        # from .ngcf.NGCF import NGCF
+        # from .lightgcn.LightGCN import LightGCN
+        # from .pinsage.PinSage import PinSage
+        # from .gat.GAT import GAT
+        # from .gcmc.GCMC import GCMC
+        # from .disen_gcn.DisenGCN import DisenGCN
+        # from .mmgcn.MMGCN import MMGCN
+        # from .dgcf.DGCF import DGCF
+        # from .egcf.EGCF import EGCF
+        # from .lgacn.LGACN import LGACN
+        # # from .kgcn.KGCN import KGCN
+        # from .gcn.GCN import GCN
+        # from .egcfv2.EGCFv2 import EGCFv2
+        # from .bprmf.BPRMF import BPRMF
+        # from .vbpr.VBPR import VBPR
+        # from .grcn.GRCN import GRCN
+        # from .mgat.MGAT import MGAT
+        # from .lattice.LATTICE import LATTICE
+        # from .slattice.SLATTICE import SLATTICE
+        # from .uuii.UUII import UUII
+        # from .ultragcn import UltraGCN
+        # from .gfcf import GFCF
+        # from .lrgccf import LRGCCF
+        # from .svd_gcn import SVDGCN
+        # from .svd_gcn_s import SVDGCNS
+        # from .lightgcn_minibatch import LightGCNMiniBatch
+        # from .lightgcn_edge import LightGCNEdge
+        # from .sgl import SGL
         from .fpsr import FPSR

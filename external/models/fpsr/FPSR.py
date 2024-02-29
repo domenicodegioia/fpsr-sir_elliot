@@ -1,7 +1,6 @@
 import math
 
 import numpy as np
-import torch
 from scipy.sparse import coo_matrix
 from tqdm import tqdm
 
@@ -10,8 +9,6 @@ from elliot.recommender import BaseRecommenderModel
 from elliot.recommender.base_recommender_model import init_charger
 from elliot.recommender.recommender_utils_mixin import RecMixin
 from .FPSRModel import FPSRModel
-
-from torch_sparse import SparseTensor
 
 
 class FPSR(RecMixin, BaseRecommenderModel):
@@ -37,9 +34,11 @@ class FPSR(RecMixin, BaseRecommenderModel):
         self.autoset_params()
 
         row, col = data.sp_i_train.nonzero()
-        col = np.array([c + self._num_users for c in col])
-        self._inter = np.array([row, col])
-        # self._inter = coo_matrix((np.ones_like(row), (row, col)))  # coo_matrix
+        # col = np.array([c + self._num_users for c in col])
+        # self._inter = np.array([row, col])
+        # self._inter = coo_matrix(np.ones_like(row), (row, col), dtype=np.float64)  # coo_matrix
+        self._inter = coo_matrix((np.ones_like(row, dtype=np.float64), (row, col)),
+                                 shape=(self._num_users, self._num_items))
 
         self._model = FPSRModel(
             num_users=self._num_users,
@@ -83,6 +82,7 @@ class FPSR(RecMixin, BaseRecommenderModel):
                     t.update()
 
             self.evaluate(it, loss / (it + 1))
+
     def get_recommendations(self, k: int = 100):
         raise NotImplementedError
 
