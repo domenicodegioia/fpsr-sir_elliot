@@ -1,0 +1,33 @@
+experiment:
+  backend: pytorch
+  data_config:
+    strategy: fixed
+    train_path: ../data/{0}/train.tsv
+    validation_path: ../data/{0}/val.tsv
+    test_path: ../data/{0}/test.tsv
+  dataset: facebook_book
+  top_k: 20
+  evaluation:
+    cutoffs: [20]
+    simple_metrics: [nDCGRendle2020, Recall]
+  gpu: -1
+  external_models_path: ../external/models/__init__.py
+  models:
+    external.FPSR:
+      meta:
+        verbose: True
+        save_recs: True
+        validation_rate: 2
+      lr: [0.1, 0.2, 0.3, 0.4, 0.5]
+      epochs: 2
+      factors: 64
+      batch_size: 256
+      eigen_n: 256
+      l_w: 0.2
+      rho: 5000
+      theta_1: [0.1, 0.2, 0.5, 1, 2, 5]
+      theta_2: [0.1, 0.2, 0.5, 1, 2, 5]
+      eta: [0.01, 0.1, 1]
+      eps: 4e-3
+      tau: [0.1, 0.2, 0.3, 0.4, 0.5]
+      seed: 123
