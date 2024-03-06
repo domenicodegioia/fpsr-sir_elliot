@@ -8,7 +8,7 @@ class FPSRModel:
                  num_users,
                  num_items,
                  learning_rate,
-                 embed_k,
+                 factors,
                  eigen_dim,
                  l_w,
                  tau,
@@ -24,21 +24,22 @@ class FPSRModel:
                  ):
 
         # set seed
-        random.seed(random_seed)
-        np.random.seed(random_seed)
-        torch.manual_seed(random_seed)
-        # torch.cuda.manual_seed(random_seed)
-        # torch.cuda.manual_seed_all(random_seed)
-        # torch.backends.cudnn.deterministic = True
+        self.random_seed = random_seed
+        random.seed(self.random_seed)
+        np.random.seed(self.random_seed)
+        torch.manual_seed(self.random_seed)
+        torch.cuda.manual_seed(self.random_seed)
+        torch.cuda.manual_seed_all(self.random_seed)
+        torch.backends.cudnn.deterministic = True
 
         # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.device = torch.device("cpu")  # 'cpu'
+        self.device = torch.device("cpu")
 
         # load parameters info
         self.num_users = num_users
         self.num_items = num_items
-        self.learning_rate = learning_rate
-        self.embed_k = embed_k
+        self.learning_rate = learning_rate  # ??????????
+        self.embed_k = factors
         self.eigen_dim = eigen_dim
         self.l_w = l_w
         self.tau = tau
@@ -57,17 +58,14 @@ class FPSRModel:
             # values=torch.ones((self.inter.shape[1], 1)).flatten(),
             size=self.inter.shape, dtype=torch.float
         ).coalesce().to(self.device)
-        # Coalescing ensures that there are no duplicate indices in the COO representation
-        # This moves the sparse tensor to a specified device
 
         # storage variables for item similarity matrix S
         self.S_indices = []
         self.S_values = []
 
+        # compute these matrices: d_i , d_i_inv , V
         # W = D_I^(1/2) * V * V^T * D_I^(-1/2)
         self.update_W()
-
-        self.first_split = self.partitioning(self.V)
 
     def update_W(self) -> None:
         self.d_i = self._degree(dim=0, exp=-0.5).reshape(-1, 1)  # D_I^(1/2)
@@ -107,20 +105,22 @@ class FPSRModel:
             split = V[:, 1] >= torch.median(V[:, 1])
         return split
 
-    def train_step(self, batch):
-        self.update_S(torch.arange(self.num_items, device=self.device)
-                      [torch.where(self.first_split)[0]])
-        self.update_S(torch.arange(self.num_items, device=self.device)
-                      [torch.where(~self.first_split)[0]])
-
-        return 0
+    def initialize(self):
+        self.first_split = self.partitioning(self.V)
+        # recursive partitioning #1
+        self.update_S(torch.arange(self.num_items, device=self.device)[torch.where(self.first_split)[0]])
+        # recursive partitioning #2
+        self.update_S(torch.arange(self.num_items, device=self.device)[torch.where(~self.first_split)[0]])
+        # concatenation of similarity matrix in all partitions
+        self.S = torch.sparse_coo_tensor(indices=torch.cat(self.S_indices, dim=1),
+                                         values=torch.cat(self.S_values, dim=0),
+                                         size=(self.num_items, self.num_items)).coalesce().T.to_sparse_csr()
+        # self.Snumpy = self.S.clone().to_dense().numpy()
+        del self.S_indices, self.S_values
 
     def update_S(self, item_list) -> None:
-        r"""Derive partition-aware item similarity matrix S in each partition.
-
-        """
-        if item_list.shape[0] <= self.tau * self.num_items:
-            # If the partition size is samller than size limit, model item similarity for this partition.
+        if item_list.shape[0] <= self.tau * self.num_items:  # |I_n| <= tau * |I|
+            # If the partition size is smaller than size limit, model item similarity for this partition.
             comm_inter = self.inter.index_select(dim=1, index=item_list).to_dense()
             comm_inter = torch.mm(comm_inter.T, comm_inter)
             comm_ae = self.item_similarity(
@@ -142,16 +142,23 @@ class FPSRModel:
         # Initialize
         Q_hat = inter_mat + self.w_2 * torch.diag(torch.pow(d_i_inv.squeeze(), 2)) + self.eta
         Q_inv = torch.inverse(Q_hat + self.rho * torch.eye(inter_mat.shape[0], device=self.device))
-        Z_aux = (Q_inv @ Q_hat @ (
-                    torch.eye(inter_mat.shape[0], device=self.device) - self.l_w * d_i * V @ V.T * d_i_inv))
+        Z_aux = (Q_inv @ Q_hat @ (torch.eye(inter_mat.shape[0], device=self.device) - self.l_w * d_i * V @ V.T * d_i_inv))
         del Q_hat
         Phi = torch.zeros_like(Q_inv, device=self.device)
         S = torch.zeros_like(Q_inv, device=self.device)
         for _ in range(50):
-            # Iteration
             Z_tilde = Z_aux + Q_inv @ (self.rho * (S - Phi))
             gamma = torch.diag(Z_tilde) / (torch.diag(Q_inv) + 1e-10)
             Z = Z_tilde - Q_inv * gamma  # Update Z
-            S = torch.clip(Z + Phi - self.w_1 / self.rho, min=0)  # Update S
-            Phi += Z - S  # Update Phi
+            S = torch.clip(Z + Phi - self.w_1 / self.rho, min=0)
+            Phi += Z - S
         return S
+
+    def predict(self, start, stop):
+        print('TEST FPSR prediction')
+        # C = S + lambda * W (item-similarity matrix)
+        batch = torch.arange(start, stop)
+        user = self.inter.index_select(dim=0, index=batch).to_dense()
+        r = torch.sparse.mm(self.S, user.T).T
+        r += self.l_w * user * self.d_i.T @ self.V @ self.V.T * self.d_i_inv
+        return r
