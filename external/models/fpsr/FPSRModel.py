@@ -155,7 +155,6 @@ class FPSRModel:
         return S
 
     def predict(self, start, stop):
-        print('TEST FPSR prediction')
         # C = S + lambda * W (item-similarity matrix)
         batch = torch.arange(start, stop)
         user = self.inter.index_select(dim=0, index=batch).to_dense()
