@@ -8,7 +8,7 @@ class FPSRModel:
                  num_users,
                  num_items,
                  learning_rate,
-                 factors,
+                 #factors,
                  eigen_dim,
                  l_w,
                  tau,
@@ -39,7 +39,7 @@ class FPSRModel:
         self.num_users = num_users
         self.num_items = num_items
         self.learning_rate = learning_rate  # ??????????
-        self.embed_k = factors
+        #self.embed_k = factors
         self.eigen_dim = eigen_dim
         self.l_w = l_w
         self.tau = tau
@@ -156,7 +156,7 @@ class FPSRModel:
 
     def predict(self, start, stop):
         # C = S + lambda * W (item-similarity matrix)
-        batch = torch.arange(start, stop)
+        batch = torch.arange(start, stop).to(self.device)
         user = self.inter.index_select(dim=0, index=batch).to_dense()
         r = torch.sparse.mm(self.S, user.T).T
         r += self.l_w * user * self.d_i.T @ self.V @ self.V.T * self.d_i_inv

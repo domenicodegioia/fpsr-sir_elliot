@@ -1,15 +1,31 @@
 experiment:
   backend: pytorch
+
   data_config:
     strategy: fixed
     train_path: ../data/{0}/train.tsv
-    validation_path: ../data/{0}/val.tsv
     test_path: ../data/{0}/test.tsv
-  dataset: facebook_book
+    validation_path: ../data/{0}/val.tsv
+
+  dataset: douban
+
+#  data_config:
+#    strategy: dataset
+#    dataset_path: ../data/{0}/dataset.tsv
+#  splitting:
+#    save_on_disk: True
+#    save_folder: ../data/{0}/splitting/
+#    test_splitting:
+#      strategy: random_subsampling
+#      test_ratio: 0.15
+#    validation_splitting:
+#      strategy: random_subsampling
+#      test_ratio: 0.15
+
   top_k: 50
   evaluation:
-    cutoffs: [50]
-    simple_metrics: [nDCGRendle2020]
+    cutoffs: [5, 10, 20, 50]
+    simple_metrics: [Recall, nDCGRendle2020]
   gpu: -1
   external_models_path: ../external/models/__init__.py
   models:
@@ -20,14 +36,14 @@ experiment:
         validation_rate: 2
       lr: 0.001
       epochs: 2
-      factors: 64
-      batch_size: 256
-      eigen_n: 256
+      #factors: 64
+      batch_size: 64
+      eigen_dim: 256
       l_w: 0.2
-      rho: 5000
-      theta_1: 0.5
-      theta_2: 5.0
+      rho: 500
+      theta_1: 0.8
+      theta_2: 0.1
       eta: 1.0
-      eps: 4e-3
-      tau: 0.3
+      eps: 5e-3
+      tau: 0.5
       seed: 123

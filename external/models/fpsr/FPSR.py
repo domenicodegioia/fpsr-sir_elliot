@@ -25,7 +25,7 @@ class FPSR(RecMixin, BaseRecommenderModel):
 
         self._params_list = [
             ("_learning_rate", "lr", "lr", 0.0005, float, None),
-            ("_factors", "factors", "factors", 64, int, None),
+            #("_factors", "factors", "factors", 64, int, None),
             ("_eigen_dim", "eigen_dim", "eigen_dim", 64, int, None),
             ("_l_w", "l_w", "l_w", 0.01, float, None),
             ("_rho", "rho", "rho", 5000, int, None),
@@ -48,7 +48,7 @@ class FPSR(RecMixin, BaseRecommenderModel):
             num_users=self._num_users,
             num_items=self._num_items,
             learning_rate=self._learning_rate,
-            factors=self._factors,
+            #factors=self._factors,
             eigen_dim=self._eigen_dim,
             l_w=self._l_w,
             tau=self._tau,
