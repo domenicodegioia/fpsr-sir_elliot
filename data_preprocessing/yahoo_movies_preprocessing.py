@@ -1,3 +1,4 @@
+import os
 import os.path
 
 from data_preprocessing.filters.models import KGToreFilter, KaHFMFilter, KGINFilter, KGATFilter, KGFlexFilter, KGUFFilter
@@ -144,3 +145,6 @@ def run(data_folder):
                       name='kg',
                       message='knowledge graph filtered')
         del aligner
+
+if __name__ == "__main__":
+    run(data_folder='/'.join(os.getcwd().split("/")[:-1]) + "/data/yahoo_movies")
