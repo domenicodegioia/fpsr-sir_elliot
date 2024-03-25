@@ -32,8 +32,8 @@ class FPSRModel:
         torch.cuda.manual_seed_all(self.random_seed)
         torch.backends.cudnn.deterministic = True
 
-        # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.device = torch.device("cpu")
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        # self.device = torch.device("cpu")
 
         # load parameters info
         self.num_users = num_users

@@ -20,8 +20,8 @@ class FPSR(RecMixin, BaseRecommenderModel):
         if self._batch_size < 1:
             self._batch_size = self._num_users
 
-        # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.device = torch.device("cpu")
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        # self.device = torch.device("cpu")
 
         self._params_list = [
             ("_learning_rate", "lr", "lr", 0.0005, float, None),
