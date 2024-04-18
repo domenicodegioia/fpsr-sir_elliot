@@ -1,0 +1,35 @@
+experiment:
+  backend: pytorch
+
+  data_config:
+    strategy: fixed
+    train_path: ../data/{0}/train.tsv
+    test_path: ../data/{0}/test.tsv
+    validation_path: ../data/{0}/val.tsv
+
+  dataset: douban
+
+  top_k: 50
+  evaluation:
+    cutoffs: [5, 10, 20, 50]
+    simple_metrics: [Recall, nDCGRendle2020]
+  gpu: -1
+  external_models_path: ../external/models/__init__.py
+  models:
+    external.FPSR:
+      meta:
+        verbose: True
+        save_recs: True
+        validation_rate: 2
+      lr: 0.001
+      epochs: 2
+      batch_size: 64
+      eigen_dim: 256
+      l_w: 0.2
+      rho: 500
+      theta_1: 0.8
+      theta_2: 0.1
+      eta: 1.0
+      eps: 5e-3
+      tau: 0.5
+      seed: 123
