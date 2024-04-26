@@ -23,7 +23,7 @@ experiment:
         validation_rate: 2
       lr: 0.001
       epochs: 2
-      batch_size: 64
+      # batch_size: 64
       eigen_dim: 256
       l_w: 0.2
       rho: 500
