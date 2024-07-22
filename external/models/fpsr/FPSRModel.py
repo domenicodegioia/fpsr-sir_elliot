@@ -7,7 +7,7 @@ class FPSRModel:
     def __init__(self,
                  num_users,
                  num_items,
-                 learning_rate,
+                 #learning_rate,
                  #factors,
                  eigen_dim,
                  l_w,
@@ -30,6 +30,7 @@ class FPSRModel:
         torch.manual_seed(self.random_seed)
         torch.cuda.manual_seed(self.random_seed)
         torch.cuda.manual_seed_all(self.random_seed)
+        torch.backends.cudnn.benchmark = False
         torch.backends.cudnn.deterministic = True
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -38,7 +39,7 @@ class FPSRModel:
         # load parameters info
         self.num_users = num_users
         self.num_items = num_items
-        self.learning_rate = learning_rate  # ??????????
+        #self.learning_rate = learning_rate  # ??????????
         #self.embed_k = factors
         self.eigen_dim = eigen_dim
         self.l_w = l_w

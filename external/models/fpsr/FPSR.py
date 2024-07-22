@@ -14,6 +14,35 @@ from .FPSRModel import FPSRModel
 
 
 class FPSR(RecMixin, BaseRecommenderModel):
+    r"""
+    LightGCN: Simplifying and Powering Graph Convolution Network for Recommendation
+
+    For further details, please refer to the `paper <https://dl.acm.org/doi/10.1145/3397271.3401063>`_
+
+    Args:
+        lr: Learning rate
+        epochs: Number of epochs
+        factors: Number of latent factors
+        batch_size: Batch size
+        l_w: Regularization coefficient
+        n_layers: Number of stacked propagation layers
+
+    To include the recommendation model, add it to the config file adopting the following pattern:
+
+    .. code:: yaml
+
+      models:
+        LightGCN:
+          meta:
+            save_recs: True
+          lr: 0.0005
+          epochs: 50
+          batch_size: 512
+          factors: 64
+          batch_size: 256
+          l_w: 0.1
+          n_layers: 2
+    """
     @init_charger
     def __init__(self, data, config, params, *args, **kwargs):
         self._sampler = cs.Sampler(self._data.i_train_dict)
@@ -24,16 +53,16 @@ class FPSR(RecMixin, BaseRecommenderModel):
         # self.device = torch.device("cpu")
 
         self._params_list = [
-            ("_learning_rate", "lr", "lr", 0.0005, float, None),
+            #("_learning_rate", "lr", "lr", 0.0005, float, None),
             #("_factors", "factors", "factors", 64, int, None),
             ("_eigen_dim", "eigen_dim", "eigen_dim", 64, int, None),
-            ("_l_w", "l_w", "l_w", 0.01, float, None),
+            ("_l_w", "l_w", "l_w", 0.5, float, None),
             ("_rho", "rho", "rho", 5000, int, None),
-            ("_w_1", "w_1", "w_1", 0.5, float, None),
-            ("_w_2", "w_2", "w_2", 5.0, float, None),
+            ("_w_1", "w_1", "w_1", 0.1, float, None),
+            ("_w_2", "w_2", "w_2", 1.0, float, None),
             ("_eta", "eta", "eta", 1.0, float, None),
             ("_tau", "tau", "tau", 0.2, float, None),
-            ("_eps", "eps", "eps", 4e-3, float, None)
+            ("_eps", "eps", "eps", 5e-3, float, None)
         ]
         self.autoset_params()
 
@@ -47,7 +76,7 @@ class FPSR(RecMixin, BaseRecommenderModel):
         self._model = FPSRModel(
             num_users=self._num_users,
             num_items=self._num_items,
-            learning_rate=self._learning_rate,
+            #learning_rate=self._learning_rate,
             #factors=self._factors,
             eigen_dim=self._eigen_dim,
             l_w=self._l_w,
