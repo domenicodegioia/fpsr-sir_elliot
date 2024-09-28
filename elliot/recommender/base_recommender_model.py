@@ -108,7 +108,7 @@ class BaseRecommenderModel(ABC):
                 setattr(self, variable_name, getattr(self._params, public_name, default))
             else:
                 setattr(self, variable_name, reading_function(getattr(self._params, public_name, default)))
-            self.logger.info(f"Parameter {public_name} set to {getattr(self, variable_name)}")
+            #self.logger.info(f"Parameter {public_name} set to {getattr(self, variable_name)}")
         if not self._params_list:
             self.logger.info("No parameters defined")
 

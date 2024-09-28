@@ -22,18 +22,18 @@ from elliot.utils import logging as logging_project
 _rstate = np.random.RandomState(42)
 here = path.abspath(path.dirname(__file__))
 
-print(u'''
-
-  /\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\   /\\\\\\\\\\\\      /\\\\\\\\\\\\                         ''' + f'Version: {__version__}' + '''                              
-  \\/\\\\\\///////////   \\////\\\\\\     \\////\\\\\\                                           
-   \\/\\\\\\                 \\/\\\\\\        \\/\\\\\\      /\\\\\\                     /\\\\\\       
-    \\/\\\\\\\\\\\\\\\\\\\\\\         \\/\\\\\\        \\/\\\\\\     \\///       /\\\\\\\\\\      /\\\\\\\\\\\\\\\\\\\\\\     
-     \\/\\\\\\///////          \\/\\\\\\        \\/\\\\\\      /\\\\\\    /\\\\\\///\\\\\\   \\////\\\\\\////     
-      \\/\\\\\\                 \\/\\\\\\        \\/\\\\\\     \\/\\\\\\   /\\\\\\  \\//\\\\\\     \\/\\\\\\    
-       \\/\\\\\\                 \\/\\\\\\        \\/\\\\\\     \\/\\\\\\  \\//\\\\\\  /\\\\\\      \\/\\\\\\ /\\\\   
-        \\/\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\   /\\\\\\\\\\\\\\\\\\   /\\\\\\\\\\\\\\\\\\  \\/\\\\\\   \\///\\\\\\\\\\/       \\//\\\\\\\\\\  
-         \\///////////////   \\/////////   \\/////////   \\///      \\/////          \\/////    
-         ''')
+# print(u'''
+#
+#   /\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\   /\\\\\\\\\\\\      /\\\\\\\\\\\\                         ''' + f'Version: {__version__}' + '''
+#   \\/\\\\\\///////////   \\////\\\\\\     \\////\\\\\\
+#    \\/\\\\\\                 \\/\\\\\\        \\/\\\\\\      /\\\\\\                     /\\\\\\
+#     \\/\\\\\\\\\\\\\\\\\\\\\\         \\/\\\\\\        \\/\\\\\\     \\///       /\\\\\\\\\\      /\\\\\\\\\\\\\\\\\\\\\\
+#      \\/\\\\\\///////          \\/\\\\\\        \\/\\\\\\      /\\\\\\    /\\\\\\///\\\\\\   \\////\\\\\\////
+#       \\/\\\\\\                 \\/\\\\\\        \\/\\\\\\     \\/\\\\\\   /\\\\\\  \\//\\\\\\     \\/\\\\\\
+#        \\/\\\\\\                 \\/\\\\\\        \\/\\\\\\     \\/\\\\\\  \\//\\\\\\  /\\\\\\      \\/\\\\\\ /\\\\
+#         \\/\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\   /\\\\\\\\\\\\\\\\\\   /\\\\\\\\\\\\\\\\\\  \\/\\\\\\   \\///\\\\\\\\\\/       \\//\\\\\\\\\\
+#          \\///////////////   \\/////////   \\/////////   \\///      \\/////          \\/////
+#          ''')
 
 def run_experiment(config_path: str = ''):
     builder = NameSpaceBuilder(config_path, here, path.abspath(path.dirname(config_path)))
@@ -49,7 +49,7 @@ def run_experiment(config_path: str = ''):
                      f'https://github.com/sisinflab/elliot/releases')
         raise Exception(
             'Version mismatch! In different versions of Elliot the results may slightly change due to progressive improvement!')
-
+    logger.info(config_path)
     logger.info("Start experiment")
     base.base_namespace.evaluation.relevance_threshold = getattr(base.base_namespace.evaluation, "relevance_threshold",
                                                                  0)
@@ -103,7 +103,7 @@ def run_experiment(config_path: str = ''):
                 all_trials[key].append([el["result"] for el in trials._trials])
                 logger.info(f"Tuning ended for {model_class.__name__}")
             else:
-                logger.info(f"Training begun for {model_class.__name__}\n")
+                logger.info(f"Training begun for {model_class.__name__}")
                 single = model_placeholder.single()
 
                 ############################################
