@@ -11,37 +11,48 @@ from elliot.utils.write import store_recommendation
 from elliot.recommender.base_recommender_model import init_charger
 from elliot.recommender.recommender_utils_mixin import RecMixin
 from .FPSRModel import FPSRModel
+from elliot.utils import logging as logging_project
 
+logger = logging_project.get_logger("__main__")
 
 class FPSR(RecMixin, BaseRecommenderModel):
     r"""
-    LightGCN: Simplifying and Powering Graph Convolution Network for Recommendation
+    FPSR: Fine-tuning Partition-aware Item Similarities for Efficient and Scalable Recommendation
 
-    For further details, please refer to the `paper <https://dl.acm.org/doi/10.1145/3397271.3401063>`_
+    For further details, please refer to the `paper <https://dl.acm.org/doi/10.1145/3543507.3583240>`_
 
     Args:
-        lr: Learning rate
-        epochs: Number of epochs
-        factors: Number of latent factors
         batch_size: Batch size
+        eigen_dim: Number of eigenvectors extracted
+        factors: Number of latent factors
         l_w: Regularization coefficient
-        n_layers: Number of stacked propagation layers
+        rho: Hyperparameter introduced by ADMM
+        w_1: l_1 regularization term
+        w_2: l_2 regularization term
+        eta:
+        eps:
+        tau: Size ratio
 
     To include the recommendation model, add it to the config file adopting the following pattern:
 
     .. code:: yaml
 
       models:
-        LightGCN:
+        external.FPSR:
           meta:
             save_recs: True
-          lr: 0.0005
-          epochs: 50
-          batch_size: 512
+                epochs: 2
+          batch_size: 64
+          eigen_dim: 256
           factors: 64
-          batch_size: 256
-          l_w: 0.1
-          n_layers: 2
+          l_w: 0.2
+          rho: 500
+          w_1: 0.8
+          w_2: 0.1
+          eta: 1.0
+          eps: 5e-3
+          tau: 0.5
+          seed: 2026
     """
     @init_charger
     def __init__(self, data, config, params, *args, **kwargs):
@@ -76,8 +87,6 @@ class FPSR(RecMixin, BaseRecommenderModel):
         self._model = FPSRModel(
             num_users=self._num_users,
             num_items=self._num_items,
-            #learning_rate=self._learning_rate,
-            #factors=self._factors,
             eigen_dim=self._eigen_dim,
             l_w=self._l_w,
             tau=self._tau,
@@ -106,10 +115,10 @@ class FPSR(RecMixin, BaseRecommenderModel):
         self._model.initialize()
 
         end = time.time()
-        print(f"The similarity computation has taken: {end - start}")
+        logger.info(f"The similarity computation has taken: {end - start}")
 
-        print(f"Transactions: {self._data.transactions}")
-
+        logger.info(f"Transactions: {self._data.transactions}")
+        logger.info("Start evaluation")
         self.evaluate()
 
     def get_recommendations(self, k: int = 100):

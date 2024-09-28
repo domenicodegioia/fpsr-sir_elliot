@@ -1,14 +1,15 @@
+import os
 import random
 import numpy as np
 import torch
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 
 class FPSRModel:
     def __init__(self,
                  num_users,
                  num_items,
-                 #learning_rate,
-                 #factors,
                  eigen_dim,
                  l_w,
                  tau,
@@ -39,8 +40,6 @@ class FPSRModel:
         # load parameters info
         self.num_users = num_users
         self.num_items = num_items
-        #self.learning_rate = learning_rate  # ??????????
-        #self.embed_k = factors
         self.eigen_dim = eigen_dim
         self.l_w = l_w
         self.tau = tau
@@ -107,6 +106,7 @@ class FPSRModel:
         return split
 
     def initialize(self):
+        # first split
         self.first_split = self.partitioning(self.V)
         # recursive partitioning #1
         self.update_S(torch.arange(self.num_items, device=self.device)[torch.where(self.first_split)[0]])
