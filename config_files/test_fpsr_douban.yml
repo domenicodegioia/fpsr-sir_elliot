@@ -12,9 +12,9 @@ experiment:
 
   dataset: douban
 
-  top_k: 50
+  top_k: 20
   evaluation:
-    cutoffs: [5, 10, 20, 50]
+    cutoffs: 20
     simple_metrics: [Recall, nDCGRendle2020]
   gpu: 0
   external_models_path: ../external/models/__init__.py
@@ -24,21 +24,15 @@ experiment:
         verbose: True
         save_recs: False
         validation_rate: 2
-        validation_metric: nDCG@10
-      #lr: 0.001
       epochs: 2
       batch_size: 64
       eigen_dim: 256
-#      l_w: 0.2
+      factors: 64
+      l_w: 0.2
       rho: 500
-#      w_1: 0.8
-#      w_2: 0.1
-#      eta: 1.0
+      w_1: 0.8
+      w_2: 0.1
+      eta: 1.0
       eps: 5e-3
-#      tau: 0.5
-      seed: 2026
-      l_w: [0.1, 0.2, 0.3, 0.4, 0.5]
-      w_1: [0.1, 0.2, 0.5, 1, 2, 5]
-      w_2: [0.1, 0.2, 0.5, 1, 2, 5]
-      eta: [0.01, 0.1, 1]
-      tau: [0.1, 0.2, 0.3, 0.4, 0.5]
+      tau: 0.5
+      seed: 123
