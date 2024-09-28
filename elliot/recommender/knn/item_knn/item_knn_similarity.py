@@ -1,3 +1,4 @@
+import os
 import pickle
 
 import numpy as np
@@ -31,15 +32,18 @@ class Similarity(object):
         self._private_items = self._data.private_items
         self._public_items = self._data.public_items
 
+        if self._num_neighbors < 0:
+            self._num_neighbors = len(self._items)
+
     def initialize(self):
         """
         This function initialize the data model
         """
 
-        self.supported_similarities = ["cosine", "dot", ]
-        self.supported_dissimilarities = ["euclidean", "manhattan", "haversine",  "chi2", 'cityblock', 'l1', 'l2', 'braycurtis', 'canberra', 'chebyshev', 'correlation', 'dice', 'hamming', 'jaccard', 'kulsinski', 'mahalanobis', 'minkowski', 'rogerstanimoto', 'russellrao', 'seuclidean', 'sokalmichener', 'sokalsneath', 'sqeuclidean', 'yule']
-        print(f"\nSupported Similarities: {self.supported_similarities}")
-        print(f"Supported Distances/Dissimilarities: {self.supported_dissimilarities}\n")
+        #self.supported_similarities = ["cosine", "dot", ]
+        #self.supported_dissimilarities = ["euclidean", "manhattan", "haversine",  "chi2", 'cityblock', 'l1', 'l2', 'braycurtis', 'canberra', 'chebyshev', 'correlation', 'dice', 'hamming', 'jaccard', 'kulsinski', 'mahalanobis', 'minkowski', 'rogerstanimoto', 'russellrao', 'seuclidean', 'sokalmichener', 'sokalsneath', 'sqeuclidean', 'yule']
+        #print(f"\nSupported Similarities: {self.supported_similarities}")
+        #print(f"Supported Distances/Dissimilarities: {self.supported_dissimilarities}\n")
 
         # self._item_ratings = {}
         # for u, user_items in self._ratings.items():
@@ -78,6 +82,10 @@ class Similarity(object):
         self._preds = self._URM.dot(W_sparse).toarray()
         ##############
         # self.compute_neighbors()
+
+        # to save similarity_matrix in numpy dense version
+        # np.save(f'{os.getcwd()}/heatmap/gowalla/itemknn/similarity_matrix.npy', self._similarity_matrix)
+        # np.save(f'/home/ironman/projects/fpsr-sir_elliot/heatmap/gowalla/itemknn/similarity_matrix.npy', self._similarity_matrix)
 
         del self._similarity_matrix
 

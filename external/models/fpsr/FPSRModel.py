@@ -116,7 +116,19 @@ class FPSRModel:
         self.S = torch.sparse_coo_tensor(indices=torch.cat(self.S_indices, dim=1),
                                          values=torch.cat(self.S_values, dim=0),
                                          size=(self.num_items, self.num_items)).coalesce().T.to_sparse_csr()
-        # self.Snumpy = self.S.clone().to_dense().numpy()
+
+        ###### COMPUTING HEATMAP
+        # to save S in numpy dense version
+        S_dense = self.S.clone().to_dense().cpu().numpy()
+        # np.save(f'{os.getcwd()}/heatmap/gowalla/fpsr/self_S.npy', S_dense)
+        # np.save('/home/ironman/projects/fpsr-sir_elliot/heatmap/gowalla/fpsr/self_S.npy', S_dense)
+        # # np.savetxt('self_S.tsv', S_dense, delimiter='\t')
+        plt.figure(figsize=(8, 6))
+        sns.heatmap(S_dense, annot=False, cmap='coolwarm')
+        plt.title('Matrice di Similarità tra Item')
+        plt.show()
+        # del S_dense
+
         del self.S_indices, self.S_values
 
     def update_S(self, item_list) -> None:
