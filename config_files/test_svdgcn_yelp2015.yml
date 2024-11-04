@@ -10,7 +10,7 @@ experiment:
     test_path: ../data/{0}/test_new.tsv
     validation_path: ../data/{0}/valid_new.tsv
 
-  dataset: amazon-cds
+  dataset: yelp2015
 
   top_k: 20
   evaluation:
@@ -19,20 +19,19 @@ experiment:
   gpu: 0
   external_models_path: ../external/models/__init__.py
   models:
-    external.FPSR:
+    external.SVDGCN:
       meta:
-        verbose: True
+        verbose: False
         save_recs: False
         validation_rate: 2
-      epochs: 2
-      batch_size: 64
-      eigen_dim: 256
+      epochs: 15
+      batch_size: 256
       factors: 64
-      l_w: 0.2
-      rho: 5000
-      w_1: 0.5
-      w_2: 5.0
-      eta: 1.0
-      eps: 4e-3
-      tau: 0.3
-      seed: 2026
+      lr: 7.0
+      l_w: 0.01
+      coef_u: 0.5
+      coef_i: 0.7
+      alpha: 3.0
+      beta: 2.0
+      req_vec: 60
+      seed: 123

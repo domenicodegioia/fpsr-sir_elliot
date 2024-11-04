@@ -10,29 +10,21 @@ experiment:
     test_path: ../data/{0}/test_new.tsv
     validation_path: ../data/{0}/valid_new.tsv
 
-  dataset: amazon-cds
+  dataset: douban
 
   top_k: 20
   evaluation:
-    cutoffs: [10, 20]
-    simple_metrics: [Recall, nDCGRendle2020]
+    cutoffs: [10,20]
+    simple_metrics: [Recall, nDCG]
   gpu: 0
   external_models_path: ../external/models/__init__.py
   models:
-    external.FPSR:
+    ItemKNN:
       meta:
         verbose: True
-        save_recs: False
-        validation_rate: 2
-      epochs: 2
-      batch_size: 64
-      eigen_dim: 256
-      factors: 64
-      l_w: 0.2
-      rho: 5000
-      w_1: 0.5
-      w_2: 5.0
-      eta: 1.0
-      eps: 4e-3
-      tau: 0.3
-      seed: 2026
+        save_recs: True
+        validation_metric: nDCG@10
+        #validation_rate: 2
+      neighbors: -1
+      similarity: cosine
+      implementation: classical
