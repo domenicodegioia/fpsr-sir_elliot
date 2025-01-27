@@ -1,4 +1,5 @@
 import os
+import time
 
 import numpy as np
 from tqdm import tqdm
@@ -12,29 +13,38 @@ class RecMixin(object):
         if self._restore:
             return self.restore_weights()
 
-        for it in range(self._num_iters):
+        for it in range(self._epochs):
             loss = 0
             steps = 0
+
+            start = time.time()
+
             with tqdm(total=int(self._data.transactions // self._batch_size), disable=not self._verbose) as t:
                 for batch in self._sampler.step(self._data.transactions, self._batch_size):
                     steps += 1
-                    loss += self._model.train_step(batch).numpy()
+                    loss += self._model.train_step(batch)#.numpy()
                     t.set_postfix({'loss': f'{loss/steps:.5f}'})
                     t.update()
+
+            end = time.time()
+            self.logger.info(f"Training has taken: {end - start}")
 
             self.evaluate(it, loss/(it + 1))
 
     def evaluate(self, it=None, loss=0):
         if (it is None) or (not (it + 1) % self._validation_rate):
+            start = time.time()
             recs = self.get_recommendations(self.evaluator.get_needed_recommendations())
             result_dict = self.evaluator.eval(recs)
-
             self._losses.append(loss)
 
             self._results.append(result_dict)
 
+            end = time.time()
+            self.logger.info(f"Evaluation has taken: {end - start}")
+
             if it is not None:
-                self.logger.info(f'Epoch {(it + 1)}/{self._epochs} loss {loss/(it + 1):.5f}')
+                self.logger.info(f'Epoch {(it + 1)}/{self._epochs},\ttrain loss {loss/(it + 1):.5f}')
             else:
                 self.logger.info(f'Finished')
 
@@ -50,7 +60,7 @@ class RecMixin(object):
             if (len(self._results) - 1) == self.get_best_arg():
                 if it is not None:
                     self._params.best_iteration = it + 1
-                self.logger.info("******************************************")
+                #self.logger.info("******************************************")
                 self.best_metric_value = self._results[-1][self._validation_k]["val_results"][self._validation_metric]
                 if self._save_weights:
                     if hasattr(self, "_model"):
@@ -69,7 +79,6 @@ class RecMixin(object):
             recs_val, recs_test = self.process_protocol(k, predictions, offset, offset_stop)
             predictions_top_k_val.update(recs_val)
             predictions_top_k_test.update(recs_test)
-
         return predictions_top_k_val, predictions_top_k_test
 
     def process_protocol(self, k, *args):
@@ -134,6 +143,3 @@ class RecMixin(object):
                 break
             else:
                 yield iteration
-
-
-

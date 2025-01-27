@@ -13,7 +13,7 @@ from elliot.utils.folder import build_log_folder
 class TimeFilter(logging.Filter):
 
     def filter(self, record: logging.LogRecord) -> bool:
-        record.time_filter = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
+        record.time_filter = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + f".{int(datetime.datetime.now().microsecond / 10000):06d}"
         return True
 
 

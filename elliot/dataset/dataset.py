@@ -213,7 +213,7 @@ class DataSet(AbstractDataset):
 
         sparsity = 1 - (self.transactions / (self.num_users * self.num_items))
         self.logger.info(
-            f"Statistics\tUsers:\t{self.num_users}\tItems:\t{self.num_items}\tTransactions:\t{self.transactions}\t"
+            f"Statistics on training set\tUsers:\t{self.num_users}\tItems:\t{self.num_items}\tTransactions:\t{self.transactions}\t"
             f"Sparsity:\t{sparsity}")
 
         self.private_users = {p: u for p, u in enumerate(self.users)}

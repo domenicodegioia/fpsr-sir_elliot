@@ -8,6 +8,9 @@ import os
 from types import SimpleNamespace
 
 from elliot.utils.folder import create_folder_by_index
+from elliot.utils import logging
+
+logger = logging.get_logger("__main__")
 
 """        
 data_config:
@@ -86,10 +89,12 @@ class Splitter:
                 raise Exception("Train or Test paths are missing")
 
         if hasattr(splitting_ns, "test_splitting"):
+            logger.info("test_splitting")
             # [(train_0,test_0), (train_1,test_1), (train_2,test_2), (train_3,test_3), (train_4,test_4)]
             tuple_list = self.handle_hierarchy(data, splitting_ns.test_splitting)
 
             if hasattr(splitting_ns, "validation_splitting"):
+                logger.info("validation_splitting")
                 exploded_train_list = []
                 for single_train, single_test in tuple_list:
                     # [(train_0,test_0), (train_1,test_1), (train_2,test_2), (train_3,test_3), (train_4,test_4)]
@@ -98,14 +103,15 @@ class Splitter:
                     exploded_train_list.append(train_val_test_tuples_list)
                 tuple_list = self.rearrange_data(tuple_list, exploded_train_list)
 
-                print("\nRealized a Train/Validation Test splitting strategy\n")
+                logger.info("Realized a Train/Validation/Test splitting strategy")
             else:
-                print("\nRealized a Train/Test splitting strategy\n")
+                logger.info("Realized a Train/Test splitting strategy")
         else:
             raise Exception("Test splitting strategy is not defined")
 
         if self.save_on_disk:
             self.store_splitting(tuple_list)
+            logger.info(f"save_on_disk DONE")
 
         return tuple_list
 
@@ -152,6 +158,7 @@ class Splitter:
                 else:
                     raise Exception(f"Option timestamp missing for {valtest_splitting_ns.strategy} strategy")
             elif valtest_splitting_ns.strategy == "temporal_hold_out":
+                logger.info("strategy: temporal_hold_out")
                 if hasattr(valtest_splitting_ns, "test_ratio"):
                     tuple_list = self.splitting_temporal_holdout(data, float(valtest_splitting_ns.test_ratio))
                 elif hasattr(valtest_splitting_ns, "leave_n_out"):
@@ -221,11 +228,12 @@ class Splitter:
         return tuple_list
 
     def splitting_temporal_holdout(self, d: pd.DataFrame, ratio=0.2):
+        logger.info(f"ratio:\t{ratio}")
         tuple_list = []
         data = d.copy()
         user_size = data.groupby(['userId'], as_index=True).size()
         user_threshold = user_size.apply(lambda x: math.floor(x * (1 - ratio)))
-        data['rank_first'] = data.groupby(['userId'])['timestamp'].rank(method='first', ascending=True, axis=1)
+        data['rank_first'] = data.groupby(['userId'])['timestamp'].rank(method='first', ascending=True)#, axis=1)
         data["test_flag"] = data.apply(
             lambda x: x["rank_first"] > user_threshold.loc[x["userId"]], axis=1)
         test = data[data["test_flag"] == True].drop(columns=["rank_first", "test_flag"]).reset_index(drop=True)
