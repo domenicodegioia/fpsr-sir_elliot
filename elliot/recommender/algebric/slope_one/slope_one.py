@@ -11,12 +11,16 @@ __email__ = 'vitowalter.anelli@poliba.it, claudio.pomo@poliba.it'
 
 import pickle
 
-import numpy as np
+import time
 
 from elliot.recommender.algebric.slope_one.slope_one_model import SlopeOneModel
 from elliot.recommender.base_recommender_model import BaseRecommenderModel, init_charger
 from elliot.recommender.recommender_utils_mixin import RecMixin
 from elliot.utils.write import store_recommendation
+
+from elliot.utils import logging as logging_project
+
+logger = logging_project.get_logger("__main__")
 
 
 class SlopeOne(RecMixin, BaseRecommenderModel):
@@ -69,7 +73,12 @@ class SlopeOne(RecMixin, BaseRecommenderModel):
         if self._restore:
             return self.restore_weights()
 
+        start = time.time()
+
         self._model.initialize()
+
+        end = time.time()
+        logger.info(f"The similarity computation has taken: {end - start}")
 
         self.evaluate()
 
