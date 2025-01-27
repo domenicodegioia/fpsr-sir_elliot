@@ -122,7 +122,7 @@ class VariationalAutoEncoder(keras.Model):
         # self.add_loss(kl_loss)
         return reconstructed, kl_loss
 
-    @tf.function
+    #@tf.function  # bug
     def train_step(self, batch, anneal_ph=0.0, **kwargs):
         with tf.GradientTape() as tape:
 
