@@ -53,3 +53,4 @@ docs/source/_templates
 *.npy
 
 /woman_results/
+/tesi_results/
