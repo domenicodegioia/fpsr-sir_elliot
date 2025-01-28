@@ -9,6 +9,9 @@ __email__ = 'vitowalter.anelli@poliba.it, claudio.pomo@poliba.it'
 
 import pickle
 import time
+import sys
+import numpy as np
+import os
 
 from elliot.recommender.recommender_utils_mixin import RecMixin
 from elliot.utils.write import store_recommendation
@@ -17,6 +20,8 @@ from elliot.recommender.base_recommender_model import BaseRecommenderModel
 from elliot.recommender.knn.item_knn.item_knn_similarity import Similarity
 from elliot.recommender.knn.item_knn.aiolli_ferrari import AiolliSimilarity
 from elliot.recommender.base_recommender_model import init_charger
+from elliot.utils import logging as logging_project
+logger = logging_project.get_logger("__main__")
 
 
 class ItemKNN(RecMixin, BaseRecommenderModel):
@@ -58,6 +63,20 @@ class ItemKNN(RecMixin, BaseRecommenderModel):
             ("_row_weights", "row_weights", "rweights", None, None, lambda x: x if x else "")
         ]
         self.autoset_params()
+
+        # Most/Least voted item
+        # item_votes = np.array(data.sp_i_train.sum(axis=0)).flatten()
+        # most_voted_item = item_votes.argmax()
+        # least_voted_item = item_votes.argmin()
+        # most_votes = item_votes[most_voted_item]
+        # least_votes = item_votes[least_voted_item]
+        # logger.info(f"Most voted item: {most_voted_item}, votes: {most_votes}")
+        # logger.info(f"Most voted item: {least_voted_item}, votes: {least_votes}")
+        # most_voted_vector = data.sp_i_train[:, most_voted_item].toarray().flatten()
+        # least_voted_vector = data.sp_i_train[:, least_voted_item].toarray().flatten()
+        # pearson_corr, p_value = pearsonr(most_voted_vector, least_voted_vector)
+        # logger.info(f"Pearson correlation between item {most_voted_item} and item {least_voted_item}: {pearson_corr}, p-value: {p_value}")
+        # sys.exit()
 
         self._ratings = self._data.train_dict
         if self._implementation == "aiolli":
@@ -101,25 +120,11 @@ class ItemKNN(RecMixin, BaseRecommenderModel):
         start = time.time()
         self._model.initialize()
         end = time.time()
-        print(f"The similarity computation has taken: {end - start}")
+        logger.info(f"The similarity computation has taken: {end - start}")
 
-        print(f"Transactions: {self._data.transactions}")
+        logger.info(f"Transactions: {self._data.transactions}")
 
+        start = time.time()
         self.evaluate()
-
-        # best_metric_value = 0
-        #
-        # recs = self.get_recommendations(self.evaluator.get_needed_recommendations())
-        # result_dict = self.evaluator.eval(recs)
-        # self._results.append(result_dict)
-        # print(f'Finished')
-        #
-        # if self._results[-1][self._validation_k]["val_results"][self._validation_metric] > best_metric_value:
-        #     print("******************************************")
-        #     if self._save_weights:
-        #         with open(self._saving_filepath, "wb") as f:
-        #             pickle.dump(self._model.get_model_state(), f)
-        #     if self._save_recs:
-        #         store_recommendation(recs, self._config.path_output_rec_result + f"{self.name}.tsv")
-
-
+        end = time.time()
+        logger.info(f"Evaluation has taken: {end - start}")
