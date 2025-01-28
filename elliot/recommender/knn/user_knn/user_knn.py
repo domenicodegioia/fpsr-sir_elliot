@@ -17,7 +17,8 @@ from elliot.recommender.base_recommender_model import BaseRecommenderModel
 from elliot.recommender.knn.user_knn.user_knn_similarity import Similarity
 from elliot.recommender.knn.user_knn.aiolli_ferrari import AiolliSimilarity
 from elliot.recommender.base_recommender_model import init_charger
-
+from elliot.utils import logging as logging_project
+logger = logging_project.get_logger("__main__")
 
 class UserKNN(RecMixin, BaseRecommenderModel):
     r"""
@@ -40,7 +41,7 @@ class UserKNN(RecMixin, BaseRecommenderModel):
             save_recs: True
           neighbors: 40
           similarity: cosine
-          implementation: aiolli
+          implementation: standard
     """
     @init_charger
     def __init__(self, data, config, params, *args, **kwargs):
@@ -101,9 +102,9 @@ class UserKNN(RecMixin, BaseRecommenderModel):
         start = time.time()
         self._model.initialize()
         end = time.time()
-        print(f"The similarity computation has taken: {end - start}")
+        logger.info(f"The similarity computation has taken: {end - start}")
 
-        print(f"Transactions: {self._data.transactions}")
+        logger.info(f"Transactions: {self._data.transactions}")
 
         self.evaluate()
 
