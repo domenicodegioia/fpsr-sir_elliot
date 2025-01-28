@@ -17,6 +17,12 @@ from elliot.recommender.base_recommender_model import BaseRecommenderModel
 from elliot.recommender.base_recommender_model import init_charger
 from elliot.recommender.recommender_utils_mixin import RecMixin
 
+from elliot.utils import logging as logging_project
+logger = logging_project.get_logger("__main__")
+
+import warnings
+warnings.filterwarnings("ignore")
+
 
 class RP3beta(RecMixin, BaseRecommenderModel):
 
@@ -51,24 +57,18 @@ class RP3beta(RecMixin, BaseRecommenderModel):
         return predictions_top_k_val, predictions_top_k_test
 
     def get_single_recommendation(self, mask, k, *args):
-        return {u: self.get_user_predictions(u, mask, k) for u in self._data.train_dict.keys()}
+        return {u: self.get_user_recs(u, mask, k) for u in self._data.train_dict.keys()}
 
-    def get_user_predictions(self, user_id, mask, top_k=10):
-        user_id = self._data.public_users.get(user_id)
+    def get_user_recs(self, u, mask, k):  # NEW
+        user_id = self._data.public_users.get(u)
         user_recs = self._preds[user_id].toarray()[0]
-        user_recs_mask = mask[user_id]
-        user_recs[~user_recs_mask] = -np.inf
-        indices, values = zip(*[(self._data.private_items.get(u_list[0]), u_list[1])
-                              for u_list in enumerate(user_recs)])
-
-        indices = np.array(indices)
-        values = np.array(values)
-        local_k = min(top_k, len(values))
-        partially_ordered_preds_indices = np.argpartition(values, -local_k)[-local_k:]
-        real_values = values[partially_ordered_preds_indices]
-        real_indices = indices[partially_ordered_preds_indices]
-        local_top_k = real_values.argsort()[::-1]
-        return [(real_indices[item], real_values[item]) for item in local_top_k]
+        masked_recs = np.where(mask[user_id], user_recs, -np.inf)
+        valid_items = int(np.sum(mask[user_id]))
+        local_k = min(k, valid_items)
+        top_k_indices = np.argpartition(masked_recs, -local_k)[-local_k:]
+        top_k_values = masked_recs[top_k_indices]
+        sorted_top_k_indices = top_k_indices[np.argsort(-top_k_values)]
+        return [(self._data.private_items[idx], masked_recs[idx]) for idx in sorted_top_k_indices]
 
     def train(self):
         if self._restore:
@@ -176,6 +176,6 @@ class RP3beta(RecMixin, BaseRecommenderModel):
         self._preds = self._train.dot(W_sparse)
 
         end = time.time()
-        print(f"The similarity computation has taken: {end - start}")
+        logger.info(f"The similarity computation has taken: {end - start}")
 
         self.evaluate()
