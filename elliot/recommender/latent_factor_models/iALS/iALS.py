@@ -10,11 +10,16 @@ __email__ = 'vitowalter.anelli@poliba.it, claudio.pomo@poliba.it'
 import numpy as np
 import pickle
 
+from time import time
+
 from elliot.recommender.recommender_utils_mixin import RecMixin
 from elliot.utils.write import store_recommendation
 from elliot.recommender.latent_factor_models.iALS.iALS_model import iALSModel
 from elliot.recommender.base_recommender_model import BaseRecommenderModel
 from elliot.recommender.base_recommender_model import init_charger
+
+from elliot.utils import logging as logging_project
+logger = logging_project.get_logger("__main__")
 
 
 class iALS(RecMixin, BaseRecommenderModel):
@@ -93,9 +98,11 @@ class iALS(RecMixin, BaseRecommenderModel):
             return self.restore_weights()
 
         for it in self.iterate(self._epochs):
+            start = time()
             self._model.train_step()
-
-            print("Iteration Finished")
-
+            end = time()
+            logger.info(f"The similarity computation has taken: {end - start}")
+            logger.info(f"Transactions: {self._data.transactions}")
+            logger.info("Start evaluation")
             self.evaluate(it)
 

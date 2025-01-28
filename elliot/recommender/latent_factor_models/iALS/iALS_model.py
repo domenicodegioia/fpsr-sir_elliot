@@ -75,18 +75,16 @@ class iALSModel(object):
         return self.pred_mat[self._data.public_users[user], self._data.public_items[item]]
 
     def get_user_recs(self, user, mask, k=100):
-        user_mask = mask[self._data.public_users[user]]
-        predictions = {i: self.predict(user, i) for i in self._data.items if user_mask[self._data.public_items[i]]}
-
-        indices, values = zip(*predictions.items())
-        indices = np.array(indices)
-        values = np.array(values)
-        local_k = min(k, len(values))
-        partially_ordered_preds_indices = np.argpartition(values, -local_k)[-local_k:]
-        real_values = values[partially_ordered_preds_indices]
-        real_indices = indices[partially_ordered_preds_indices]
-        local_top_k = real_values.argsort()[::-1]
-        return [(real_indices[item], real_values[item]) for item in local_top_k]
+        user_id = self._data.public_users[user]
+        user_mask = mask[user_id]
+        predictions = self.pred_mat[user_id].copy()
+        predictions[~user_mask] = -np.inf
+        valid_items = user_mask.sum()
+        local_k = min(k, valid_items)
+        top_k_indices = np.argpartition(predictions, -local_k)[-local_k:]
+        top_k_values = predictions[top_k_indices]
+        sorted_top_k_indices = top_k_indices[np.argsort(-top_k_values)]
+        return [(self._data.private_items[idx], predictions[idx]) for idx in sorted_top_k_indices]
 
     def get_model_state(self):
         saving_dict = {}
