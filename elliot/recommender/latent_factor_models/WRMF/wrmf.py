@@ -16,6 +16,9 @@ from elliot.recommender.latent_factor_models.WRMF.wrmf_model import WRMFModel
 from elliot.recommender.base_recommender_model import BaseRecommenderModel
 from elliot.recommender.base_recommender_model import init_charger
 
+from elliot.utils import logging as logging_project
+logger = logging_project.get_logger("__main__")
+import time
 
 class WRMF(RecMixin, BaseRecommenderModel):
     r"""
@@ -83,9 +86,10 @@ class WRMF(RecMixin, BaseRecommenderModel):
             return self.restore_weights()
 
         for it in self.iterate(self._epochs):
+            start = time.time()
             self._model.train_step()
-
-            print("Iteration Finished")
+            end = time.time()
+            logger.info(f"Iteration {it} takes {end - start}")
 
             self.evaluate(it)
 

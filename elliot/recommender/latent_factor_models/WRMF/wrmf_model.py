@@ -12,7 +12,10 @@ import pickle
 import numpy as np
 from scipy import sparse as sp
 from scipy.sparse.linalg import spsolve
+from tqdm import tqdm
 
+from elliot.utils import logging as logging_project
+logger = logging_project.get_logger("__main__")
 
 class WRMFModel(object):
     """
@@ -63,18 +66,17 @@ class WRMFModel(object):
         return self.pred_mat[self._data.public_users[user], self._data.public_items[item]]
 
     def get_user_recs(self, user, mask, k=100):
-        user_mask = mask[self._data.public_users[user]]
-        predictions = {i: self.predict(user, i) for i in self._data.items if user_mask[self._data.public_items[i]]}
-
-        indices, values = zip(*predictions.items())
-        indices = np.array(indices)
-        values = np.array(values)
-        local_k = min(k, len(values))
-        partially_ordered_preds_indices = np.argpartition(values, -local_k)[-local_k:]
-        real_values = values[partially_ordered_preds_indices]
-        real_indices = indices[partially_ordered_preds_indices]
-        local_top_k = real_values.argsort()[::-1]
-        return [(real_indices[item], real_values[item]) for item in local_top_k]
+        user_id = self._data.public_users[user]
+        user_recs = self.pred_mat[user_id]
+        masked_recs = np.where(mask[user_id], user_recs, -np.inf)
+        valid_items = np.sum(mask[user_id])
+        local_k = min(k, valid_items)
+        if local_k == 0:
+            return []
+        top_k_indices = np.argpartition(masked_recs, -local_k)[-local_k:]
+        top_k_values = masked_recs[top_k_indices]
+        sorted_top_k_indices = top_k_indices[np.argsort(-top_k_values)]
+        return [(self._data.private_items[idx], masked_recs[idx]) for idx in sorted_top_k_indices]
 
     def get_model_state(self):
         saving_dict = {}
