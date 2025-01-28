@@ -9,6 +9,7 @@ __email__ = 'vitowalter.anelli@poliba.it, claudio.pomo@poliba.it'
 
 import pickle
 import numpy as np
+import random
 
 
 class MFModel(object):
@@ -22,6 +23,8 @@ class MFModel(object):
                  random_seed,
                  *args):
         np.random.seed(random_seed)
+        random.seed(random_seed)
+
         self._factors = F
         self._users = data.users
         self._items = data.items
@@ -38,13 +41,6 @@ class MFModel(object):
         self.initialize(*args)
 
     def initialize(self, loc: float = 0, scale: float = 0.1):
-        """
-        This function initialize the data model
-        :param loc:
-        :param scale:
-        :return:
-        """
-
         self._global_bias = 0
 
         "same parameters as np.randn"
@@ -83,22 +79,16 @@ class MFModel(object):
             u, top in enumerate(zip(*(partial_index.tolist(), masking_partition.tolist())))}
         return predictions_top_k
 
-    def get_user_predictions(self, user_id, mask, top_k=10):
-        user_id = self._public_users.get(user_id)
-        b = self._item_bias + self._user_factors[user_id] @ self._item_factors.T
-        a = mask[user_id]
-        b[~a] = -np.inf
-        indices, values = zip(*[(self._private_items.get(u_list[0]), u_list[1])
-                              for u_list in enumerate(b.data)])
-
-        indices = np.array(indices)
-        values = np.array(values)
-        local_k = min(top_k, len(values))
-        partially_ordered_preds_indices = np.argpartition(values, -local_k)[-local_k:]
-        real_values = values[partially_ordered_preds_indices]
-        real_indices = indices[partially_ordered_preds_indices]
-        local_top_k = real_values.argsort()[::-1]
-        return [(real_indices[item], real_values[item]) for item in local_top_k]
+    def get_user_predictions(self, u, mask, k):  # NEW
+        user_id = self._public_users.get(u)
+        user_recs = self._item_bias + self._user_factors[user_id] @ self._item_factors.T
+        masked_recs = np.where(mask[user_id], user_recs, -np.inf)
+        valid_items = np.sum(mask[user_id])
+        local_k = min(k, valid_items)
+        top_k_indices = np.argpartition(masked_recs, -local_k)[-local_k:]
+        top_k_values = masked_recs[top_k_indices]
+        sorted_top_k_indices = top_k_indices[np.argsort(-top_k_values)]
+        return [(self._data.private_items[idx], masked_recs[idx]) for idx in sorted_top_k_indices]
 
     def train_step(self, batch, **kwargs):
         for u, i, j in zip(*batch):

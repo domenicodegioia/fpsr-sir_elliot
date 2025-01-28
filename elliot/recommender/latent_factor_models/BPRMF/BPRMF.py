@@ -3,6 +3,7 @@ Module description:
 
 """
 from tqdm import tqdm
+import time
 
 from elliot.recommender.latent_factor_models.BPRMF.BPRMF_model import MFModel
 
@@ -14,6 +15,9 @@ from elliot.dataset.samplers import custom_sampler as cs
 from elliot.recommender.base_recommender_model import BaseRecommenderModel
 from elliot.recommender.base_recommender_model import init_charger
 from elliot.recommender.recommender_utils_mixin import RecMixin
+
+from elliot.utils import logging as logging_project
+logger = logging_project.get_logger("__main__")
 
 
 class BPRMF(RecMixin, BaseRecommenderModel):
@@ -63,14 +67,10 @@ class BPRMF(RecMixin, BaseRecommenderModel):
             ("_factors", "factors", "f", 10, int, None),
             ("_learning_rate", "lr", "lr", 0.05, None, None),
             ("_bias_regularization", "bias_regularization", "bias_reg", 0, None, None),
-            ("_user_regularization", "user_regularization", "u_reg", 0.0025,
-             None, None),
-            ("_positive_item_regularization", "positive_item_regularization", "pos_i_reg", 0.0025,
-             None, None),
-            ("_negative_item_regularization", "negative_item_regularization", "neg_i_reg", 0.00025,
-             None, None),
-            ("_update_negative_item_factors", "update_negative_item_factors", "up_neg_i_f", True,
-             None, None),
+            ("_user_regularization", "user_regularization", "u_reg", 0.0025, None, None),
+            ("_positive_item_regularization", "positive_item_regularization", "pos_i_reg", 0.0025, None, None),
+            ("_negative_item_regularization", "negative_item_regularization", "neg_i_reg", 0.00025, None, None),
+            ("_update_negative_item_factors", "update_negative_item_factors", "up_neg_i_f", True, None, None),
             ("_update_users", "update_users", "up_u", True, None, None),
             ("_update_items", "update_items", "up_i", True, None, None),
             ("_update_bias", "update_bias", "up_b", True, None, None),
@@ -114,17 +114,24 @@ class BPRMF(RecMixin, BaseRecommenderModel):
         if self._restore:
             return self.restore_weights()
 
-        print(f"Transactions: {self._data.transactions}")
+        start_t = time.time()
 
         for it in self.iterate(self._epochs):
-            print(f"\n********** Iteration: {it + 1}")
+            logger.info(f"\n********** Iteration: {it + 1}")
             loss = 0
             steps = 0
+
+            start = time.time()
+
             with tqdm(total=int(self._data.transactions // self._batch_size), disable=not self._verbose) as t:
                 for batch in self._sampler.step(self._data.transactions, self._batch_size):
                     steps += 1
                     self._model.train_step(batch)
                     t.update()
 
+            end = time.time()
+            logger.info(f"Epoch has taken: {end - start}")
             self.evaluate(it)
 
+        end_t = time.time()
+        logger.info(f"Total training has taken: {end - start}")
