@@ -49,7 +49,11 @@ def run_experiment(config_path: str = ''):
                      f'https://github.com/sisinflab/elliot/releases')
         raise Exception(
             'Version mismatch! In different versions of Elliot the results may slightly change due to progressive improvement!')
-    logger.info(config_path)
+
+    with open(config_path, "r", encoding="utf-8") as file:
+        content = file.read()
+        logger.info(config_path + "\n" + content + "\n\n")
+
     logger.info("Start experiment")
     base.base_namespace.evaluation.relevance_threshold = getattr(base.base_namespace.evaluation, "relevance_threshold",
                                                                  0)
@@ -79,7 +83,8 @@ def run_experiment(config_path: str = ''):
             model_placeholder = ho.ModelCoordinator(data_test, base.base_namespace, model_base, model_class,
                                                     test_fold_index)
             if isinstance(model_base, tuple):
-                logger.info(f"Tuning begun for {model_class.__name__}\n")
+                logger.info("**************************************************")
+                logger.info(f"Tuning begun for {model_class.__name__}")
                 trials = Trials()
                 fmin(model_placeholder.objective,
                      space=model_base[1],
@@ -103,6 +108,8 @@ def run_experiment(config_path: str = ''):
                 all_trials[key].append([el["result"] for el in trials._trials])
                 logger.info(f"Tuning ended for {model_class.__name__}")
             else:
+                logger.info("")
+                logger.info("---------------------------------------------")
                 logger.info(f"Training begun for {model_class.__name__}")
                 single = model_placeholder.single()
 
@@ -120,7 +127,11 @@ def run_experiment(config_path: str = ''):
 
             logger.info(f"Loss:\t{best_model_loss}")
             logger.info(f"Best Model params:\t{best_model_params}")
-            logger.info(f"Best Model results:\t{best_model_results}")
+            # logger.info(f'Best Model results:\n{ [ "".join(best_model_results[cutoff]).join("\n") for cutoff, _ in enumerate(best_model_results) ]}')
+            logger.info(
+                f"Best Model results:\n" +
+                "\n".join(f"{cutoff}: {value}" for cutoff, value in best_model_results.items())
+            )
 
         # Migliore sui test, aggiunta a performance totali
         min_val = np.argmin([i["loss"] for i in test_results])
