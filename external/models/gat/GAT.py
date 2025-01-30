@@ -55,7 +55,7 @@ class GAT(RecMixin, BaseRecommenderModel):
           l_w: 0.1
           weight_size: (64,)
           heads: (8,)
-          message_dropout: (0.1,)
+          message_dropout: 0.1
     """
     @init_charger
     def __init__(self, data, config, params, *args, **kwargs):
@@ -142,43 +142,6 @@ class GAT(RecMixin, BaseRecommenderModel):
         items_ratings_pair = [list(zip(map(self._data.private_items.get, u_list[0]), u_list[1]))
                               for u_list in list(zip(i.detach().cpu().numpy(), v.detach().cpu().numpy()))]
         return dict(zip(map(self._data.private_users.get, range(offset, offset_stop)), items_ratings_pair))
-
-    def evaluate(self, it=None, loss=0):
-        if (it is None) or (not (it + 1) % self._validation_rate):
-            recs = self.get_recommendations(self.evaluator.get_needed_recommendations())
-            result_dict = self.evaluator.eval(recs)
-
-            self._losses.append(loss)
-
-            self._results.append(result_dict)
-
-            if it is not None:
-                self.logger.info(f'Epoch {(it + 1)}/{self._epochs} loss {loss/(it + 1):.5f}')
-            else:
-                self.logger.info(f'Finished')
-
-            if self._save_recs:
-                self.logger.info(f"Writing recommendations at: {self._config.path_output_rec_result}")
-                if it is not None:
-                    store_recommendation(recs[1], os.path.abspath(
-                        os.sep.join([self._config.path_output_rec_result, f"{self.name}_it={it + 1}.tsv"])))
-                else:
-                    store_recommendation(recs[1], os.path.abspath(
-                        os.sep.join([self._config.path_output_rec_result, f"{self.name}.tsv"])))
-
-            if (len(self._results) - 1) == self.get_best_arg():
-                if it is not None:
-                    self._params.best_iteration = it + 1
-                self.logger.info("******************************************")
-                self.best_metric_value = self._results[-1][self._validation_k]["val_results"][self._validation_metric]
-                if self._save_weights:
-                    if hasattr(self, "_model"):
-                        torch.save({
-                            'model_state_dict': self._model.state_dict(),
-                            'optimizer_state_dict': self._model.optimizer.state_dict()
-                        }, self._saving_filepath)
-                    else:
-                        self.logger.warning("Saving weights FAILED. No model to save.")
 
     def restore_weights(self):
         try:
