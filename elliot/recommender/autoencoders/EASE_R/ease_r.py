@@ -51,20 +51,13 @@ class EASER(RecMixin, BaseRecommenderModel):
 
     def get_user_predictions(self, user_id, mask, top_k=10):
         user_id = self._data.public_users.get(user_id)
-        b = self._preds[user_id]
-        a = mask[user_id]
-        b[~a] = -np.inf
-        indices, values = zip(*[(self._data.private_items.get(u_list[0]), u_list[1])
-                              for u_list in enumerate(b.data)])
+        user_recs = self._preds[user_id]
+        masked_recs = np.where(mask[user_id], user_recs, -np.inf)
+        top_k_indices = np.argpartition(masked_recs, -top_k)[-top_k:]
+        top_k_values = masked_recs[top_k_indices]
+        sorted_top_k_indices = top_k_indices[np.argsort(-top_k_values)]
+        return [(self._data.private_items[idx], masked_recs[idx]) for idx in sorted_top_k_indices]
 
-        indices = np.array(indices)
-        values = np.array(values)
-        local_k = min(top_k, len(values))
-        partially_ordered_preds_indices = np.argpartition(values, -local_k)[-local_k:]
-        real_values = values[partially_ordered_preds_indices]
-        real_indices = indices[partially_ordered_preds_indices]
-        local_top_k = real_values.argsort()[::-1]
-        return [(real_indices[item], real_values[item]) for item in local_top_k]
 
     def train(self):
         if self._restore:
