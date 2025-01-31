@@ -49,9 +49,9 @@ class NGCF(RecMixin, BaseRecommenderModel):
           batch_size: 512
           factors: 64
           l_w: 0.1
-          weight_size: (64,)
-          node_dropout: ()
-          message_dropout: (0.1,)
+          weight_size: 64
+          node_dropout: 0.1
+          message_dropout: 0.1
     """
     @init_charger
     def __init__(self, data, config, params, *args, **kwargs):
