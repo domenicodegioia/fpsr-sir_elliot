@@ -1,5 +1,6 @@
 import os
 import time
+import sys
 
 import torch
 import numpy as np
@@ -7,7 +8,6 @@ from scipy.sparse import coo_matrix
 
 from elliot.dataset.samplers import custom_sampler as cs
 from elliot.recommender import BaseRecommenderModel
-from elliot.utils.write import store_recommendation
 from elliot.recommender.base_recommender_model import init_charger
 from elliot.recommender.recommender_utils_mixin import RecMixin
 from .FPSRModel import FPSRModel
@@ -61,11 +61,9 @@ class FPSR(RecMixin, BaseRecommenderModel):
             self._batch_size = self._num_users
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        # self.device = torch.device("cpu")
 
         self._params_list = [
-            #("_learning_rate", "lr", "lr", 0.0005, float, None),
-            #("_factors", "factors", "factors", 64, int, None),
+            ("_factors", "factors", "factors", 64, int, None),
             ("_eigen_dim", "eigen_dim", "eigen_dim", 64, int, None),
             ("_l_w", "l_w", "l_w", 0.5, float, None),
             ("_rho", "rho", "rho", 5000, int, None),
@@ -81,6 +79,21 @@ class FPSR(RecMixin, BaseRecommenderModel):
         # col = np.array([c + self._num_users for c in col])
         # self._inter = np.array([row, col])
         # self._inter = coo_matrix(np.ones_like(row), (row, col), dtype=np.float64)  # coo_matrix
+
+        # # Most/Least voted item
+        # item_votes = np.array(data.sp_i_train.sum(axis=0)).flatten()
+        # most_voted_item = item_votes.argmax()
+        # least_voted_item = item_votes.argmin()
+        # most_votes = item_votes[most_voted_item]
+        # least_votes = item_votes[least_voted_item]
+        # logger.info(f"Most voted item: {most_voted_item}, votes: {most_votes}")
+        # logger.info(f"Most voted item: {least_voted_item}, votes: {least_votes}")
+        # most_voted_vector = data.sp_i_train[:, most_voted_item].toarray().flatten()
+        # least_voted_vector = data.sp_i_train[:, least_voted_item].toarray().flatten()
+        # pearson_corr, p_value = pearsonr(most_voted_vector, least_voted_vector)
+        # logger.info(f"Pearson correlation between item {most_voted_item} and item {least_voted_item}: {pearson_corr}, p-value: {p_value}")
+        # sys.exit()
+
         self._inter = coo_matrix((np.ones_like(row, dtype=np.float64), (row, col)),
                                  shape=(self._num_users, self._num_items))
 
@@ -139,42 +152,6 @@ class FPSR(RecMixin, BaseRecommenderModel):
                               for u_list in list(zip(i.detach().cpu().numpy(), v.detach().cpu().numpy()))]
         return dict(zip(map(self._data.private_users.get, range(offset, offset_stop)), items_ratings_pair))
 
-    def evaluate(self, it=None, loss=0):
-        if (it is None) or (not (it + 1) % self._validation_rate):
-            recs = self.get_recommendations(self.evaluator.get_needed_recommendations())
-            result_dict = self.evaluator.eval(recs)
-
-            self._losses.append(loss)
-
-            self._results.append(result_dict)
-
-            if it is not None:
-                self.logger.info(f'Epoch {(it + 1)}/{self._epochs} loss {loss / (it + 1):.5f}')
-            else:
-                self.logger.info(f'Finished')
-
-            if self._save_recs:
-                self.logger.info(f"Writing recommendations at: {self._config.path_output_rec_result}")
-                if it is not None:
-                    store_recommendation(recs[1], os.path.abspath(
-                        os.sep.join([self._config.path_output_rec_result, f"{self.name}_it={it + 1}.tsv"])))
-                else:
-                    store_recommendation(recs[1], os.path.abspath(
-                        os.sep.join([self._config.path_output_rec_result, f"{self.name}.tsv"])))
-
-            if (len(self._results) - 1) == self.get_best_arg():
-                if it is not None:
-                    self._params.best_iteration = it + 1
-                self.logger.info("******************************************")
-                self.best_metric_value = self._results[-1][self._validation_k]["val_results"][self._validation_metric]
-                if self._save_weights:
-                    if hasattr(self, "_model"):
-                        torch.save({
-                            'model_state_dict': self._model.state_dict(),
-                            'optimizer_state_dict': self._model.optimizer.state_dict()
-                        }, self._saving_filepath)
-                    else:
-                        self.logger.warning("Saving weights FAILED. No model to save.")
 
     def restore_weights(self):
         raise NotImplementedError

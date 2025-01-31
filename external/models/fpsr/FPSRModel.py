@@ -2,8 +2,14 @@ import os
 import random
 import numpy as np
 import torch
-import matplotlib.pyplot as plt
-import seaborn as sns
+import sys
+from tqdm import tqdm
+
+from elliot.utils import logging as logging_project
+logger = logging_project.get_logger("__main__")
+
+import warnings
+warnings.filterwarnings("ignore")
 
 
 class FPSRModel:
@@ -35,7 +41,6 @@ class FPSRModel:
         torch.backends.cudnn.deterministic = True
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        # self.device = torch.device("cpu")
 
         # load parameters info
         self.num_users = num_users
@@ -116,20 +121,25 @@ class FPSRModel:
         self.S = torch.sparse_coo_tensor(indices=torch.cat(self.S_indices, dim=1),
                                          values=torch.cat(self.S_values, dim=0),
                                          size=(self.num_items, self.num_items)).coalesce().T.to_sparse_csr()
+        logger.info(f"Total number of partitions created: {len(self.S_indices)}")
+        del self.S_indices, self.S_values
 
         ###### COMPUTING HEATMAP
-        # to save S in numpy dense version
-        S_dense = self.S.clone().to_dense().cpu().numpy()
-        # np.save(f'{os.getcwd()}/heatmap/gowalla/fpsr/self_S.npy', S_dense)
-        # np.save('/home/ironman/projects/fpsr-sir_elliot/heatmap/gowalla/fpsr/self_S.npy', S_dense)
+        # # to save S in numpy dense version
+        # logger.info(f"Creating heatmap")
+        # S_dense = self.S.clone().to_dense().cpu().numpy()
+        # # S_mean = np.mean(S_dense)
+        # # S_std = np.std(S_dense)
+        # # S_dense = (S_dense - S_mean) / S_std
+        # S_min = np.min(S_dense)
+        # S_max = np.max(S_dense)
+        # S_dense = (S_dense - S_min) / (S_max - S_min)
+        # # np.save(f'{os.getcwd()}/heatmap/yelp2018/fpsr/similarity_matrix.npy', S_dense)
+        # np.save('/home/ironman/projects/fpsr-sir_elliot/heatmap/yelp2018/fpsr/similarity_matrix.npy', S_dense)
         # # np.savetxt('self_S.tsv', S_dense, delimiter='\t')
-        plt.figure(figsize=(8, 6))
-        sns.heatmap(S_dense, annot=False, cmap='coolwarm')
-        plt.title('Matrice di Similarità tra Item')
-        plt.show()
         # del S_dense
-
-        del self.S_indices, self.S_values
+        # logger.info(f"Created")
+        # sys.exit()
 
     def update_S(self, item_list) -> None:
         if item_list.shape[0] <= self.tau * self.num_items:  # |I_n| <= tau * |I|
@@ -143,6 +153,7 @@ class FPSRModel:
                 self.d_i_inv[:, item_list]
             )
             comm_ae = torch.where(comm_ae >= self.eps, comm_ae, 0).to_sparse_coo()
+            # comm_ae = comm_ae.to_sparse_coo()
             self.S_indices.append(item_list[comm_ae.indices()])
             self.S_values.append(comm_ae.values())
         else:
@@ -152,8 +163,7 @@ class FPSRModel:
             self.update_S(item_list[torch.where(~split)[0]])
 
     def item_similarity(self, inter_mat, V, d_i, d_i_inv) -> torch.Tensor:
-        # Initialize
-        Q_hat = inter_mat + self.w_2 * torch.diag(torch.pow(d_i_inv.squeeze(), 2)) + self.eta
+        Q_hat = inter_mat + self.w_2 * torch.diag(torch.pow(d_i_inv.squeeze().reshape(-1, 1), 2)) + self.eta
         Q_inv = torch.inverse(Q_hat + self.rho * torch.eye(inter_mat.shape[0], device=self.device))
         Z_aux = (Q_inv @ Q_hat @ (torch.eye(inter_mat.shape[0], device=self.device) - self.l_w * d_i * V @ V.T * d_i_inv))
         del Q_hat
