@@ -61,7 +61,7 @@ class DataSetLoader(LoaderCoordinator):
 
             self.logger.info(f"{path_train_data} - Loaded")
 
-            if config.binarize == True or all(self.train_dataframe["rating"].isna()):
+            if config.binarize == True or all(self.train_dataframe["rating"].isna()):  # attenzione
                 self.test_dataframe["rating"] = 1
                 self.train_dataframe["rating"] = 1
 
