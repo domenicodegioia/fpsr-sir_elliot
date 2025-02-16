@@ -13,7 +13,7 @@ import torch
 import numpy as np
 import random
 
-
+# https://github.com/jchanxtarov/bprmf/blob/main/src/models/bprmf_torch.py
 class BPRMFModel(torch.nn.Module, ABC):
     def __init__(self,
                  num_users,
