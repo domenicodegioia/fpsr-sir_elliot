@@ -113,9 +113,9 @@ class FPSRModel:
     def initialize(self):
         # first split
         self.first_split = self.partitioning(self.V)
-        # recursive partitioning #1
+        # recursive partitioning_item #1
         self.update_S(torch.arange(self.num_items, device=self.device)[torch.where(self.first_split)[0]])
-        # recursive partitioning #2
+        # recursive partitioning_item #2
         self.update_S(torch.arange(self.num_items, device=self.device)[torch.where(~self.first_split)[0]])
         # concatenation of similarity matrix in all partitions
         self.S = torch.sparse_coo_tensor(indices=torch.cat(self.S_indices, dim=1),
@@ -153,11 +153,11 @@ class FPSRModel:
                 self.d_i_inv[:, item_list]
             )
             comm_ae = torch.where(comm_ae >= self.eps, comm_ae, 0).to_sparse_coo()
-            # comm_ae = comm_ae.to_sparse_coo()
+            # comm_ae = comm_ae.to_sparse_coo()  # no tollerance
             self.S_indices.append(item_list[comm_ae.indices()])
             self.S_values.append(comm_ae.values())
         else:
-            # If the partition size is larger than size limit, perform graph partitioning on this partition.
+            # If the partition size is larger than size limit, perform graph partitioning_item on this partition.
             split = self.partitioning(self._svd(self._norm_adj(item_list), 2))
             self.update_S(item_list[torch.where(split)[0]])
             self.update_S(item_list[torch.where(~split)[0]])
@@ -178,7 +178,7 @@ class FPSRModel:
         return S
 
     def predict(self, start, stop):
-        # C = S + lambda * W (item-similarity matrix)
+        # C = S + lambda * W (C -> item-similarity matrix, W -> global info, S-> local info)
         batch = torch.arange(start, stop).to(self.device)
         user = self.inter.index_select(dim=0, index=batch).to_dense()
         r = torch.sparse.mm(self.S, user.T).T

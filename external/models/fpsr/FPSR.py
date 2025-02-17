@@ -22,15 +22,13 @@ class FPSR(RecMixin, BaseRecommenderModel):
     For further details, please refer to the `paper <https://dl.acm.org/doi/10.1145/3543507.3583240>`_
 
     Args:
-        batch_size: Batch size
         eigen_dim: Number of eigenvectors extracted
-        factors: Number of latent factors
         l_w: Regularization coefficient
         rho: Hyperparameter introduced by ADMM
         w_1: l_1 regularization term
         w_2: l_2 regularization term
-        eta:
-        eps:
+        eta: regularizes the similarity between items within the partition
+        eps: tolerance
         tau: Size ratio
 
     To include the recommendation model, add it to the config file adopting the following pattern:
@@ -42,9 +40,7 @@ class FPSR(RecMixin, BaseRecommenderModel):
           meta:
             save_recs: True
                 epochs: 2
-          batch_size: 64
           eigen_dim: 256
-          factors: 64
           l_w: 0.2
           rho: 500
           w_1: 0.8
@@ -63,7 +59,6 @@ class FPSR(RecMixin, BaseRecommenderModel):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         self._params_list = [
-            ("_factors", "factors", "factors", 64, int, None),
             ("_eigen_dim", "eigen_dim", "eigen_dim", 64, int, None),
             ("_l_w", "l_w", "l_w", 0.5, float, None),
             ("_rho", "rho", "rho", 5000, int, None),
