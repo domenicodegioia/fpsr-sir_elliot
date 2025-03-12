@@ -24,7 +24,8 @@ from .kgflex_umap import KGFlexUmap
 from .convmf import ConvMF
 from .hrdr import HRDR
 from .KaVAE import KaVAE
-from .cdrib import CDRIB
+# from .cdrib import CDRIB
+# from .psge import PSGE
 
 import sys
 for _backend in sys.modules["external"].backend:
@@ -64,3 +65,9 @@ for _backend in sys.modules["external"].backend:
         # from .lightgcn_edge import LightGCNEdge
         # from .sgl import SGL
         from .fpsr import FPSR
+        from .svd_gcn_fpsr import SVDGCNFPSR
+        from .item_knn import ItemKNN
+        from .simgcl import SimGCL
+        from .spectral_cf import SpectralCF
+        from .bism import BISM
+        from .admm_slim import ADMMSlim
