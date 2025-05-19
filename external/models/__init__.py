@@ -25,7 +25,8 @@ from .convmf import ConvMF
 from .hrdr import HRDR
 from .KaVAE import KaVAE
 # from .cdrib import CDRIB
-# from .psge import PSGE
+from .psge import PSGE
+from .admm_slim import ADMMSlim
 
 import sys
 for _backend in sys.modules["external"].backend:
@@ -64,10 +65,10 @@ for _backend in sys.modules["external"].backend:
         # from .lightgcn_minibatch import LightGCNMiniBatch
         # from .lightgcn_edge import LightGCNEdge
         # from .sgl import SGL
+
+        # new implementations
         from .fpsr import FPSR
-        from .svd_gcn_fpsr import SVDGCNFPSR
-        from .item_knn import ItemKNN
         from .simgcl import SimGCL
         from .spectral_cf import SpectralCF
         from .bism import BISM
-        from .admm_slim import ADMMSlim
+        from .MF2020 import MF2020
