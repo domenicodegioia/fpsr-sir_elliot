@@ -1,13 +1,18 @@
+
 from tqdm import tqdm
 import os
+import time
 
 from elliot.utils.write import store_recommendation
-from .custom_sampler_batch import Sampler
-from .sampling import *
+from .custom_sampler import Sampler
 from elliot.recommender import BaseRecommenderModel
 from elliot.recommender.base_recommender_model import init_charger
 from elliot.recommender.recommender_utils_mixin import RecMixin
 from .UltraGCNModel import UltraGCNModel
+
+import math
+import torch
+import numpy as np
 
 
 class UltraGCN(RecMixin, BaseRecommenderModel):
@@ -23,29 +28,42 @@ class UltraGCN(RecMixin, BaseRecommenderModel):
 
     @init_charger
     def __init__(self, data, config, params, *args, **kwargs):
-
-        self._sampler = Sampler(self._data.i_train_dict)
-        if self._batch_size < 1:
-            self._batch_size = self._num_users
-
         ######################################
 
         self._params_list = [
             ("_learning_rate", "lr", "lr", 1e-4, float, None),
             ("_factors", "factors", "factors", 64, int, None),
+            # L = -(w1 + w2*\beta)) * log(sigmoid(e_u e_i)) - \sum_{N-} (w3 + w4*\beta) * log(sigmoid(e_u e_i'))
             ("_w1", "w1", "w1", 1e-7, float, None),
             ("_w2", "w2", "w2", 1, float, None),
             ("_w3", "w3", "w3", 1, float, None),
             ("_w4", "w4", "w4", 1, float, None),
-            ("_ii_n_n", "ii_n_n", "ii_n_n", 10, int, None),
+            ("_ii_n_n", "ii_n_n", "ii_n_n", 10, int, None),  # ii_neighbor_num
             ("_i_w", "i_w", "i_w", 1e-3, float, None),
-            ("_n_n", "n_n", "n_n", 200, int, None),
-            ("_n_w", "n_w", "n_w", 200, float, None),
-            ("_g", "g", "g", 1e-4, float, None),
+            ("_n_n", "n_n", "n_n", 200, int, None),  # negative_num
+            ("_n_w", "n_w", "n_w", 200, int, None),  # negative_weight
+            ("_g", "g", "g", 1e-4, float, None),  # weight of l2 normalization
             ("_l", "l", "l", 2.75, float, None),
             ("_s_s_p", "s_s_p", "s_s_p", False, bool, None)
         ]
         self.autoset_params()
+
+        row, col = data.sp_i_train.nonzero()
+        edge_index = list(zip(row, col))
+
+        interacted_items = [[] for _ in range(self._num_users)]
+        for (u, i) in edge_index:
+            interacted_items[u].append(i)
+
+        self._sampler = Sampler(edge_index=edge_index,
+                                num_items=self._num_items,
+                                batch_size=self._batch_size,
+                                negative_num=self._n_n,
+                                sampling_sift_pos=self._s_s_p,
+                                interacted_items=interacted_items,
+                                seed=self._seed)
+        if self._batch_size < 1:
+            self._batch_size = self._num_users
 
         ii_neighbor_mat, ii_constraint_mat = self.get_ii_constraint_mat(data.sp_i_train, self._ii_n_n)
 
@@ -114,20 +132,36 @@ class UltraGCN(RecMixin, BaseRecommenderModel):
         for it in self.iterate(self._epochs):
             loss = 0
             steps = 0
-            with tqdm(total=int(self._data.transactions // self._batch_size), disable=not self._verbose) as t:
-                for batch, probs in self._sampler.step(self._data.transactions, self._batch_size):
+            start = time.time()
+            n_batch = int(self._data.transactions / self._batch_size) if self._data.transactions % self._batch_size == 0 else int(self._data.transactions / self._batch_size) + 1
+            with tqdm(total=n_batch, disable=not self._verbose) as t:
+                for x in self._sampler.train_loader:
                     steps += 1
-                    current_batch_size = batch[0].shape[0]
-                    neg_items = sampling(current_batch_size, probs, self._num_items, self._n_n,
-                                         self._s_s_p)
-                    users, pos_items = batch
-                    loss += self._model.train_step((torch.from_numpy(users),
-                                                    torch.from_numpy(pos_items),
+                    users, pos_items, neg_items = self._sampler.step(x)
+                    loss += self._model.train_step((users,
+                                                    pos_items,
                                                     neg_items))
+
+                    if math.isnan(loss) or math.isinf(loss) or (not loss):
+                        break
+
                     t.set_postfix({'loss': f'{loss / steps:.5f}'})
                     t.update()
 
-            self.evaluate(it, loss / (it + 1))
+            end = time.time()
+            #self.logger.info(f"Training has taken: {end - start}")
+
+            need_test = True
+            if it < 50 and it % 5 != 0:
+                need_test = False
+            if need_test:
+                self.evaluate(it, loss / (it + 1))
+
+        if it + 1 == self._epochs and self._write_best_iterations:  # never met an early stopping condition
+            with open(self._config.path_output_rec_performance + '/best_iterations.tsv', 'a') as f:
+                f.write(self.name + '\t' + str(self._params.best_iteration) + '\n')
+            self.logger.info(f"Best iteration: {self._params.best_iteration}")
+            self.logger.info(f"Current configuration: {self.name}")
 
     def get_recommendations(self, k: int = 100):
         predictions_top_k_test = {}
@@ -145,43 +179,6 @@ class UltraGCN(RecMixin, BaseRecommenderModel):
         items_ratings_pair = [list(zip(map(self._data.private_items.get, u_list[0]), u_list[1]))
                               for u_list in list(zip(i.detach().cpu().numpy(), v.detach().cpu().numpy()))]
         return dict(zip(map(self._data.private_users.get, range(offset, offset_stop)), items_ratings_pair))
-
-    def evaluate(self, it=None, loss=0):
-        if (it is None) or (not (it + 1) % self._validation_rate):
-            recs = self.get_recommendations(self.evaluator.get_needed_recommendations())
-            result_dict = self.evaluator.eval(recs)
-
-            self._losses.append(loss)
-
-            self._results.append(result_dict)
-
-            if it is not None:
-                self.logger.info(f'Epoch {(it + 1)}/{self._epochs} loss {loss / (it + 1):.5f}')
-            else:
-                self.logger.info(f'Finished')
-
-            if self._save_recs:
-                self.logger.info(f"Writing recommendations at: {self._config.path_output_rec_result}")
-                if it is not None:
-                    store_recommendation(recs[1], os.path.abspath(
-                        os.sep.join([self._config.path_output_rec_result, f"{self.name}_it={it + 1}.tsv"])))
-                else:
-                    store_recommendation(recs[1], os.path.abspath(
-                        os.sep.join([self._config.path_output_rec_result, f"{self.name}.tsv"])))
-
-            if (len(self._results) - 1) == self.get_best_arg():
-                if it is not None:
-                    self._params.best_iteration = it + 1
-                self.logger.info("******************************************")
-                self.best_metric_value = self._results[-1][self._validation_k]["val_results"][self._validation_metric]
-                if self._save_weights:
-                    if hasattr(self, "_model"):
-                        torch.save({
-                            'model_state_dict': self._model.state_dict(),
-                            'optimizer_state_dict': self._model.optimizer.state_dict()
-                        }, self._saving_filepath)
-                    else:
-                        self.logger.warning("Saving weights FAILED. No model to save.")
 
     def restore_weights(self):
         try:
