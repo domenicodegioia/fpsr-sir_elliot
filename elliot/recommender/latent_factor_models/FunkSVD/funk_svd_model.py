@@ -74,7 +74,7 @@ class FunkSVDModel(keras.Model):
 
         return output
 
-    @tf.function
+    # @tf.function
     def train_step(self, batch):
         user, pos, label = batch
         with tf.GradientTape() as tape:

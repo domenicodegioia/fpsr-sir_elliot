@@ -20,7 +20,7 @@ from elliot.recommender.base_recommender_model import BaseRecommenderModel
 from elliot.recommender.base_recommender_model import init_charger
 
 
-class LogisticMatrixFactorization(RecMixin, BaseRecommenderModel):
+class LMF(RecMixin, BaseRecommenderModel):
     r"""
     Logistic Matrix Factorization
 
