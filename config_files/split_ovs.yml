@@ -1,0 +1,30 @@
+experiment:
+  dataset: woman-1m
+  data_config:
+    strategy: dataset
+    dataset_path: ../data/{0}/{0}.tsv
+  splitting:
+#    save_on_disk: True
+#    save_folder: ../data/{0}/{0}/
+    test_splitting:
+      strategy: temporal_hold_out
+      test_ratio: 0.1
+    validation_splitting:
+      strategy: temporal_hold_out
+      test_ratio: 0.2
+  top_k: 50
+  evaluation:
+    cutoffs: [5,10,20,50]
+    simple_metrics: [nDCG, Precision, Recall, ItemCoverage, Gini, PopREO]
+    relevance_threshold: 0
+    validation_metric: nDCG@5
+  models:
+    Random:
+      meta:
+        verbose: False
+        save_recs: False
+      seed: 42
+    MostPop:
+      meta:
+        verbose: False
+        save_recs: False
