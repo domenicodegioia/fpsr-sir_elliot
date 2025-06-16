@@ -27,6 +27,7 @@ from .KaVAE import KaVAE
 # from .cdrib import CDRIB
 from .psge import PSGE
 from .admm_slim import ADMMSlim
+from .svd_ae import SVD_AE
 
 import sys
 for _backend in sys.modules["external"].backend:
