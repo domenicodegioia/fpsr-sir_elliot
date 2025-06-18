@@ -2,10 +2,13 @@ import torch
 import numpy as np
 import scipy.sparse as sp
 from tqdm import tqdm
+import random
 
 from elliot.recommender import BaseRecommenderModel
 from elliot.recommender.base_recommender_model import init_charger
 from elliot.recommender.recommender_utils_mixin import RecMixin
+
+from .sparse_matmul import batch_dense_matmul_sparse_input
 
 
 class SVD_AE(RecMixin, BaseRecommenderModel):
@@ -21,10 +24,18 @@ class SVD_AE(RecMixin, BaseRecommenderModel):
 
     @init_charger
     def __init__(self, data, config, params, *args, **kwargs):
+        # set seed
+        random.seed(self._seed)
+        np.random.seed(self._seed)
+        torch.manual_seed(self._seed)
+        torch.cuda.manual_seed(self._seed)
+        torch.cuda.manual_seed_all(self._seed)
+        torch.backends.cudnn.benchmark = False
+        torch.backends.cudnn.deterministic = True
+
         self._params_list = [
             ("_batch_eval", "batch_eval", "batch_eval", 512, int, None),
             ("_factors", "factors", "factors", 256, int, None),
-            #("_alpha", "alpha", "alpha", 0.3, float, None)
         ]
 
         self.autoset_params()
@@ -61,10 +72,17 @@ class SVD_AE(RecMixin, BaseRecommenderModel):
 
         self.logger.info("Computing A...")
         A = ut @ (torch.diag(1 / s)) @ vt.T
+        del ut, s, vt
+
         self.logger.info("Computing partial...")
-        partial = A.T @ adj_mat.to_dense()
+        self.preds = batch_dense_matmul_sparse_input(A=A.T, B=adj_mat, device=self.device, batch_size=1000) #A.T @ adj_mat.to_dense()
+        del A, adj_mat
+
         self.logger.info("Computing preds...")
-        self.preds = torch.mm(norm_adj, partial)
+        #self.preds = torch.mm(self.preds.T, norm_adj.T).T # torch.mm(norm_adj, self.preds)
+        self.preds = batch_dense_matmul_sparse_input(A=self.preds.T, B=norm_adj.T, device=self.device, batch_size=1000)
+        del norm_adj
+        self.preds = self.preds.T
 
         self.evaluate()
 
@@ -74,7 +92,7 @@ class SVD_AE(RecMixin, BaseRecommenderModel):
         col = torch.Tensor(coo.col).long()
         index = torch.stack([row, col])
         data = torch.FloatTensor(coo.data)
-        return torch.sparse.FloatTensor(index, data, torch.Size(coo.shape))
+        return torch.sparse.FloatTensor(index, data, torch.Size(coo.shape)).coalesce()
 
     def get_recommendations(self, k: int = 100):
         predictions_top_k_test = {}
@@ -88,13 +106,7 @@ class SVD_AE(RecMixin, BaseRecommenderModel):
         return predictions_top_k_val, predictions_top_k_test
 
     def predict(self, batch_start, batch_stop):
-        # norm_adj = self.norm_adj
-        # adj_mat = self.adj_mat
-        # batch_test = np.array(adj_mat[batch_start: batch_stop, :].todense())
-        # U_2 = batch_test @ norm_adj.T @ norm_adj
-        # U_1 = batch_test @ self.d_mat_i @ self.vt.T @ self.vt @ self.d_mat_i_inv
-        # return U_2 + self._alpha * U_1
-        return self.preds[batch_start:batch_stop]
+        return self.preds[batch_start:batch_stop, :]
 
     def get_top_k(self, preds, train_mask, k=100):
         return torch.topk(torch.where(torch.tensor(train_mask).to(self.device), torch.tensor(preds).to(self.device),
