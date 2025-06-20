@@ -1,0 +1,23 @@
+experiment:
+
+  data_config:
+    strategy: fixed
+    train_path: ../data/{0}/train.tsv
+    test_path: ../data/{0}/test.tsv
+
+  dataset: ml-10m_svdae
+  top_k: 100
+  evaluation:
+    cutoffs: [10, 20, 100]
+    simple_metrics: [HR, nDCG, Recall, Precision]
+
+  gpu: 0
+  external_models_path: ../external/models/__init__.py
+
+  models:
+    external.SVD_AE:
+      meta:
+        save_recs: False
+        verbose: False
+      factors: 427
+      seed: 42
