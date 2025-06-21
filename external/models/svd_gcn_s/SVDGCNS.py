@@ -2,7 +2,6 @@ import numpy as np
 import torch
 import os
 
-from elliot.utils.write import store_recommendation
 from elliot.recommender import BaseRecommenderModel
 from elliot.recommender.base_recommender_model import init_charger
 from elliot.recommender.recommender_utils_mixin import RecMixin
@@ -43,17 +42,18 @@ class SVDGCNS(RecMixin, BaseRecommenderModel):
 
         if self._config.data_config.strategy == 'fixed':
             path, _ = os.path.split(self._config.data_config.train_path)
-            if not (os.path.exists(path + '/svd_u.npy') or os.path.exists(path + '/svd_i.npy') or os.path.exists(
-                    path + '/svd_value.npy')):
+            if not (os.path.exists(path + f'/svd_u_{self._alpha}.npy')
+                    or os.path.exists(path + f'/svd_i_{self._alpha}.npy') or os.path.exists(
+                    path + f'/svd_value_{self._alpha}.npy')):
                 self.logger.info(
                     f"Processing singular values as they haven't been calculated before on this dataset...")
-                U, value, V = self.preprocess(path)
+                U, value, V = self.preprocess(path, data.num_users, data.num_items)
                 self.logger.info(f"Processing end!")
             else:
                 self.logger.info(f"Singular values have already been processed for this dataset!")
-                value = torch.Tensor(np.load(path + r'/svd_value.npy'))
-                U = torch.Tensor(np.load(path + r'/svd_u.npy'))
-                V = torch.Tensor(np.load(path + r'/svd_v.npy'))
+                value = torch.Tensor(np.load(path + f'/svd_value_{self._alpha}.npy'))
+                U = torch.Tensor(np.load(path + f'/svd_u_{self._alpha}.npy'))
+                V = torch.Tensor(np.load(path + f'/svd_v_{self._alpha}.npy'))
         else:
             raise NotImplementedError('The check when strategy is different from fixed has not been implemented yet!')
 
@@ -71,15 +71,15 @@ class SVDGCNS(RecMixin, BaseRecommenderModel):
                + f"_{self.get_base_params_shortcut()}" \
                + f"_{self.get_params_shortcut()}"
 
-    def preprocess(self, dataset):
+    def preprocess(self, dataset, users, items):
         D_u = self.rate_matrix.sum(1) + self._alpha
         D_i = self.rate_matrix.sum(0) + self._alpha
 
-        for i in range(self._num_users):
+        for i in range(users):
             if D_u[i] != 0:
                 D_u[i] = 1 / D_u[i].sqrt()
 
-        for i in range(self._num_items):
+        for i in range(items):
             if D_i[i] != 0:
                 D_i[i] = 1 / D_i[i].sqrt()
 
@@ -91,9 +91,9 @@ class SVDGCNS(RecMixin, BaseRecommenderModel):
 
         U, value, V = torch.svd_lowrank(rate_matrix, q=400, niter=30)
 
-        np.save(dataset + r'/svd_u.npy', U.cpu().numpy())
-        np.save(dataset + r'/svd_v.npy', V.cpu().numpy())
-        np.save(dataset + r'/svd_value.npy', value.cpu().numpy())
+        np.save(dataset + f'/svd_u_{self._alpha}.npy', U.cpu().numpy())
+        np.save(dataset + f'/svd_v_{self._alpha}.npy', V.cpu().numpy())
+        np.save(dataset + f'/svd_value_{self._alpha}.npy', value.cpu().numpy())
 
         return U, value, V
 
@@ -120,54 +120,3 @@ class SVDGCNS(RecMixin, BaseRecommenderModel):
         items_ratings_pair = [list(zip(map(self._data.private_items.get, u_list[0]), u_list[1]))
                               for u_list in list(zip(i.detach().cpu().numpy(), v.detach().cpu().numpy()))]
         return dict(zip(map(self._data.private_users.get, range(offset, offset_stop)), items_ratings_pair))
-
-    def evaluate(self, it=None, loss=0):
-        if (it is None) or (not (it + 1) % self._validation_rate):
-            recs = self.get_recommendations(self.evaluator.get_needed_recommendations())
-            result_dict = self.evaluator.eval(recs)
-
-            self._losses.append(loss)
-
-            self._results.append(result_dict)
-
-            if it is not None:
-                self.logger.info(f'Epoch {(it + 1)}/{self._epochs} loss {loss / (it + 1):.5f}')
-            else:
-                self.logger.info(f'Finished')
-
-            if self._save_recs:
-                self.logger.info(f"Writing recommendations at: {self._config.path_output_rec_result}")
-                if it is not None:
-                    store_recommendation(recs[1], os.path.abspath(
-                        os.sep.join([self._config.path_output_rec_result, f"{self.name}_it={it + 1}.tsv"])))
-                else:
-                    store_recommendation(recs[1], os.path.abspath(
-                        os.sep.join([self._config.path_output_rec_result, f"{self.name}.tsv"])))
-
-            if (len(self._results) - 1) == self.get_best_arg():
-                if it is not None:
-                    self._params.best_iteration = it + 1
-                self.logger.info("******************************************")
-                self.best_metric_value = self._results[-1][self._validation_k]["val_results"][self._validation_metric]
-                if self._save_weights:
-                    if hasattr(self, "_model"):
-                        torch.save({
-                            'model_state_dict': self._model.state_dict(),
-                            'optimizer_state_dict': self._model.optimizer.state_dict()
-                        }, self._saving_filepath)
-                    else:
-                        self.logger.warning("Saving weights FAILED. No model to save.")
-
-    def restore_weights(self):
-        try:
-            checkpoint = torch.load(self._saving_filepath)
-            self._model.load_state_dict(checkpoint['model_state_dict'])
-            self._model.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-            print(f"Model correctly Restored")
-            self.evaluate()
-            return True
-
-        except Exception as ex:
-            raise Exception(f"Error in model restoring operation! {ex}")
-
-        return False
