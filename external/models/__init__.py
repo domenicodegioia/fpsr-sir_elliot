@@ -28,6 +28,7 @@ from .KaVAE import KaVAE
 from .psge import PSGE
 from .admm_slim import ADMMSlim
 from .svd_ae import SVD_AE
+from .bspm import BSPM
 
 import sys
 for _backend in sys.modules["external"].backend:
@@ -72,4 +73,5 @@ for _backend in sys.modules["external"].backend:
         from .simgcl import SimGCL
         from .spectral_cf import SpectralCF
         from .bism import BISM
+        from .turbo_cf import TurboCF
         from .MF2020 import MF2020
