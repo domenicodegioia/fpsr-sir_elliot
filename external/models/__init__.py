@@ -29,6 +29,7 @@ from .psge import PSGE
 from .admm_slim import ADMMSlim
 from .svd_ae import SVD_AE
 from .bspm import BSPM
+from .sgfcf import SGFCF
 
 import sys
 for _backend in sys.modules["external"].backend:
