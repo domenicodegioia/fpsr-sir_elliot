@@ -3,6 +3,7 @@ import numpy as np
 import random
 from tqdm import tqdm
 import gc
+from time import time
 
 from elliot.recommender import BaseRecommenderModel
 from elliot.recommender.base_recommender_model import init_charger
@@ -45,6 +46,8 @@ class SGFCF(RecMixin, BaseRecommenderModel):
         self.freq_matrix = torch.from_numpy(data.sp_i_train.todense()).to(self.device)
 
     def train(self):
+        start = time()
+
         homo_ratio_user, homo_ratio_item = self._homo_ratio()
 
         D_u = 1 / (self.freq_matrix.sum(1) + self._alpha).pow(self._eps)
@@ -74,17 +77,37 @@ class SGFCF(RecMixin, BaseRecommenderModel):
 
         self.rate_matrix = self.rate_matrix / (self.rate_matrix.sum(1).unsqueeze(1))
 
-        norm_freq_matrix = norm_freq_matrix.mm(norm_freq_matrix.t()).mm(norm_freq_matrix)
-
-        norm_freq_matrix = norm_freq_matrix / (norm_freq_matrix.sum(1).unsqueeze(1))
-
-        self.rate_matrix = (self.rate_matrix + self._gamma * norm_freq_matrix).sigmoid()
-
-        # self.rate_matrix = self.rate_matrix - self.freq_matrix * 1000
-
-        del self.freq_matrix, norm_freq_matrix
+        # norm_freq_matrix = norm_freq_matrix.mm(norm_freq_matrix.t()).mm(norm_freq_matrix)
+        high_order_matrix = torch.empty_like(norm_freq_matrix)
+        for i in tqdm(range(0, self._num_users, self._batch_eval), desc="Computing high-order proximity", disable=not self._verbose):
+            stop_idx = min(i + self._batch_eval, self._num_users)
+            user_batch = norm_freq_matrix[i:stop_idx]  # [batch_size, num_items]
+            # (A_batch @ A.T) @ A
+            user_user_batch_similarity = user_batch.mm(norm_freq_matrix.t())  # Dim: [batch_size, num_users]
+            batch_result = user_user_batch_similarity.mm(norm_freq_matrix)  # Dim: [batch_size, num_items]
+            high_order_matrix[i:stop_idx] = batch_result
+        norm_freq_matrix = high_order_matrix
+        del high_order_matrix
         gc.collect()
         torch.cuda.empty_cache()
+
+        # norm_freq_matrix = norm_freq_matrix / (norm_freq_matrix.sum(1).unsqueeze(1))
+        row_sums = norm_freq_matrix.sum(1, keepdim=True)
+        row_sums[row_sums == 0] = 1.0  # Protezione per la divisione per zero
+        norm_freq_matrix.div_(row_sums)  # divisione IN-PLACE per risparmiare memoria
+
+        # self.rate_matrix = (self.rate_matrix + self._gamma * norm_freq_matrix).sigmoid()
+        torch.add(self.rate_matrix, norm_freq_matrix, alpha=self._gamma, out=self.rate_matrix)
+        torch.sigmoid(self.rate_matrix, out=self.rate_matrix)
+
+        # self.rate_matrix = self.rate_matrix - self.freq_matrix * 1000  # masking in evaluation
+
+        del self.freq_matrix, norm_freq_matrix, row_sums
+        gc.collect()
+        torch.cuda.empty_cache()
+
+        end = time()
+        self.logger.info(f"Training has taken: {end - start}")
 
         self.evaluate()
 
@@ -98,7 +121,7 @@ class SGFCF(RecMixin, BaseRecommenderModel):
             train_data_item[i].append(u)
 
         homo_ratio_user, homo_ratio_item = [], []
-        for u in tqdm(range(self._num_users), desc="Computing homo_ratio_user", disable=False):
+        for u in tqdm(range(self._num_users), desc="Computing homo_ratio_user", disable=not self._verbose):
             if len(train_data[u]) > 1:
                 inter_items = self.freq_matrix[:, train_data[u]].t()
                 inter_items[:, u] = 0
@@ -109,7 +132,7 @@ class SGFCF(RecMixin, BaseRecommenderModel):
                 homo_ratio_user.append(ratio_u)
             else:
                 homo_ratio_user.append(0)
-        for i in tqdm(range(self._num_items), desc="Computing homo_ratio_item", disable=False):
+        for i in tqdm(range(self._num_items), desc="Computing homo_ratio_item", disable=not self._verbose):
             if len(train_data_item[i]) > 1:
                 inter_users = self.freq_matrix[train_data_item[i]]
                 inter_users[:, i] = 0
@@ -128,7 +151,7 @@ class SGFCF(RecMixin, BaseRecommenderModel):
     def get_recommendations(self, k: int = 100):
         predictions_top_k_test = {}
         predictions_top_k_val = {}
-        for index, offset in enumerate(tqdm(range(0, self._num_users, self._batch_eval))):
+        for index, offset in enumerate(tqdm(range(0, self._num_users, self._batch_eval), disable=not self._verbose, desc="Evaluating")):
             offset_stop = min(offset + self._batch_eval, self._num_users)
             predictions = self.get_users_rating(offset, offset_stop)
             recs_val, recs_test = self.process_protocol(k, predictions, offset, offset_stop)
