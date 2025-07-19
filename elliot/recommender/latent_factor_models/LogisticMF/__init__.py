@@ -1,1 +1,1 @@
-from .logistic_matrix_factorization import LogisticMatrixFactorization as LMF
+from .logistic_matrix_factorization import LMF
