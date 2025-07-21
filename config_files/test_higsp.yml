@@ -1,0 +1,31 @@
+experiment:
+
+  backend: pytorch
+
+  data_config:
+    strategy: fixed
+    train_path: ../data/{0}/train.tsv
+    test_path: ../data/{0}/test.tsv
+
+  dataset: ml1m_fagsp
+  top_k: 20
+  evaluation:
+    cutoffs: [5,10,20]
+    simple_metrics: [Precision, Recall, F1, MRR, nDCG]
+
+  gpu: 0
+  external_models_path: ../external/models/__init__.py
+
+  models:
+    external.HiGSP:
+      meta:
+        save_recs: False
+        verbose: True
+      batch_eval: 1024
+      alpha_1: 0.3
+      alpha_2: 0.9
+      order_1: 8
+      order_2: 8
+      pri_factor: 256
+      n_clusters: 6
+      seed: 42

@@ -77,3 +77,4 @@ for _backend in sys.modules["external"].backend:
         from .turbo_cf import TurboCF
         from .MF2020 import MF2020
         from .fagsp import FaGSP
+        from .higsp import HiGSP
