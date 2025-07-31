@@ -25,14 +25,14 @@ experiment:
       delta: 0.34
       seed: 42
 
-#    external.LinkPropMulti:
-#      meta:
-#        save_recs: False
-#        verbose: False
-#      alpha: 0.34
-#      beta: 0.5
-#      gamma: 0.67
-#      delta: 0.34
-#      r: 2
-#      t: 0.2
-#      seed: 42
+    external.LinkPropMulti:
+      meta:
+        save_recs: False
+        verbose: False
+      alpha: 0.34
+      beta: 0.5
+      gamma: 0.67
+      delta: 0.34
+      r: 2
+      t: 0.2
+      seed: 42

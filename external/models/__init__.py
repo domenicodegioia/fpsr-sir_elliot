@@ -31,6 +31,7 @@ from .svd_ae import SVD_AE
 from .bspm import BSPM
 from .sgfcf import SGFCF
 from .linkprop import LinkProp
+from .linkpropmulti import LinkPropMulti
 
 import sys
 for _backend in sys.modules["external"].backend:
@@ -77,6 +78,8 @@ for _backend in sys.modules["external"].backend:
         from .bism import BISM
         from .turbo_cf import TurboCF
         from .MF2020 import MF2020
+        from .svdpp import SVDpp
+        from .lightgcl import LightGCL
         from .fagsp import FaGSP
         from .higsp import HiGSP
         from .chebycf import ChebyCF
