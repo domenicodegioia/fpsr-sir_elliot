@@ -1,0 +1,1 @@
+from .LinkPropMulti import LinkPropMulti
