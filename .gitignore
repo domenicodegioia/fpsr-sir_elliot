@@ -54,3 +54,6 @@ docs/source/_templates
 
 /woman_results/
 /tesi_results/
+
+woman*
+!woman*/
