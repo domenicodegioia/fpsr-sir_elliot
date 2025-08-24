@@ -27,7 +27,7 @@ experiment:
       feature_type: both
       smooth_ratio: 0.05
       rough_ratio: 0.005
-      epochs: 300
+      epochs: 100
       lr: 7.5
       dropout: 0.5
       beta: 4.0
