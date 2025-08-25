@@ -85,3 +85,4 @@ for _backend in sys.modules["external"].backend:
         from .chebycf import ChebyCF
         from .gde import GDE
         from .rsgde import RSGDE
+        from .csgde import CSGDE
