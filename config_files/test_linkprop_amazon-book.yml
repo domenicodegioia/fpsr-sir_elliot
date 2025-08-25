@@ -2,10 +2,10 @@ experiment:
 
   data_config:
     strategy: fixed
-    train_path: ../data/{0}/train.tsv
-    test_path: ../data/{0}/test.tsv
+    train_path: ../data/{0}/train_ngcf.tsv
+    test_path: ../data/{0}/test_ngcf.tsv
 
-  dataset: gowalla_ngcf
+  dataset: amazon-book
   top_k: 20
   evaluation:
     cutoffs: [20]
@@ -21,18 +21,6 @@ experiment:
         verbose: False
       alpha: 0.0
       beta: 0.5
-      gamma: 0.67
-      delta: 0.34
-      seed: 42
-
-    external.LinkPropMulti:
-      meta:
-        save_recs: False
-        verbose: False
-      alpha: 0.34
-      beta: 0.5
-      gamma: 0.67
-      delta: 0.34
-      r: 2
-      t: 0.2
+      gamma: 0.5
+      delta: 0.5
       seed: 42
