@@ -69,9 +69,6 @@ class RSGDE(RecMixin, BaseRecommenderModel):
         else:
             raise NotImplementedError('The check when strategy is different from fixed has not been implemented yet!')
 
-        self.user_matrix = ((self.rate_matrix.mm(self.rate_matrix.t())) != 0).float().to(self.device)
-        self.item_matrix = ((self.rate_matrix.t().mm(self.rate_matrix)) != 0).float().to(self.device)
-
         self._model = RSGDEModel(
             learning_rate=self._learning_rate,
             embed_k=self._factors,
