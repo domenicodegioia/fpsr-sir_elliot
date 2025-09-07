@@ -85,5 +85,6 @@ for _backend in sys.modules["external"].backend:
         from .higsp import HiGSP
         from .chebycf import ChebyCF
         from .gde import GDE
+        from .sgde import SGDE
         from .rsgde import RSGDE
         from .csgde import CSGDE

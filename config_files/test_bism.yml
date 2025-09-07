@@ -23,6 +23,6 @@ experiment:
       alpha: 10
       beta: 100
       lamb: 10
-      iterations: 10
+      epochs: 50
       c: 6
       seed: 42

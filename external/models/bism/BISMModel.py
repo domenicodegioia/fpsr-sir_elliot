@@ -20,7 +20,6 @@ class BISMModel(torch.nn.Module):
                  beta,
                  lamb,
                  c,
-                 iterations,
                  random_seed,
                  name="FPSR",
                  **kwargs
@@ -46,7 +45,7 @@ class BISMModel(torch.nn.Module):
         self.beta = beta
         self.lamb = lamb
         self.c = c
-        self.iterations = iterations
+        self.iterations = 10
         self.inter = inter
 
         # compute user-item interaction matrix
@@ -72,8 +71,8 @@ class BISMModel(torch.nn.Module):
 
         self.D = 1e-5
 
-    def compute(self):
-        for it in tqdm(range(self.iterations), disable=True):
+    def train_step(self):
+        with torch.no_grad():
             # update F
             S = self.Sl.data
             S0 = (S + torch.t(S)) / 2
@@ -107,7 +106,7 @@ class BISMModel(torch.nn.Module):
             loss += trace(self.D, Sl) * self.lamb
             loss += (trace(Sl) + trace(Sg)) * self.beta / 2
             # obj += trace(torch.sum(S, 0) - 1) * self.gamma / 2
-            logger.info(f"Iteration {it}\tloss {loss}")
+        return loss
 
     def predict(self, start, stop):
         batch = torch.arange(start, stop).to(self.device)

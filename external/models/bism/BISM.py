@@ -5,6 +5,7 @@ import sys
 import torch
 import numpy as np
 from scipy.sparse import coo_matrix, dok_matrix
+from tqdm import tqdm
 
 from elliot.recommender import BaseRecommenderModel
 from elliot.recommender.base_recommender_model import init_charger
@@ -46,7 +47,6 @@ class BISM(RecMixin, BaseRecommenderModel):
             ("_beta", "beta", "beta", 0.1, float, None),
             ("_lamb", "lamb", "lamb", 0.1, float, None),
             ("_c", "c", "c", 1, int, None),
-            ("_iterations", "iterations", "iterations", 5, int, None),
         ]
         self.autoset_params()
 
@@ -62,7 +62,6 @@ class BISM(RecMixin, BaseRecommenderModel):
             beta=self._beta,
             lamb=self._lamb,
             c=self._c,
-            iterations=self._iterations,
             random_seed=self._seed
         )
 
@@ -74,12 +73,13 @@ class BISM(RecMixin, BaseRecommenderModel):
 
     def train(self):
         start = time.time()
-        self._model.compute()
+        for it in range(self._epochs):
+            loss = 0
+            loss += self._model.train_step()
+            self.evaluate(it, loss / (it + 1))
         end = time.time()
         logger.info(f"The similarity computation has taken: {end - start}")
 
-        logger.info("Start evaluation")
-        self.evaluate()
 
     def get_recommendations(self, k: int = 100):
         predictions_top_k_test = {}
