@@ -73,6 +73,7 @@ for _backend in sys.modules["external"].backend:
 
         # new implementations
         from .fpsr import FPSR
+        from .fpsr_plus import FPSRplus
         from .simgcl import SimGCL
         from .spectral_cf import SpectralCF
         from .bism import BISM
