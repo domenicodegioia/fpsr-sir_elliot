@@ -6,13 +6,15 @@ import sys
 from tqdm import tqdm
 
 from elliot.utils import logging as logging_project
+
 logger = logging_project.get_logger("__main__")
 
 import warnings
+
 warnings.filterwarnings("ignore")
 
 
-class FPSRplusModel:
+class FPSRplusFModel:
     def __init__(self,
                  num_users,
                  num_items,
@@ -118,14 +120,17 @@ class FPSRplusModel:
         return split
 
     def initialize(self):
-        pop_split = self.partitioning(self.V, pop=True)
-        self.pop_list = torch.arange(self.num_items, device=self.device)[torch.where(pop_split)[0]]
+        abs_fielder_vector = torch.abs(self.V[:, 1])
+        _, sorted_indices = torch.sort(abs_fielder_vector, descending=False)
+
+        num_hubs = int(self.num_items * self.pop_ratio)
+        logger.info(f"Total number of hubs created: {num_hubs}")
+
+        self.pop_list = sorted_indices[:num_hubs]
 
         first_split = self.partitioning(self.V)
-        self.update_S(torch.arange(self.num_items, device=self.device)[
-                          torch.where(first_split)[0]])  # recursive paritioning #1
-        self.update_S(torch.arange(self.num_items, device=self.device)[
-                          torch.where(~first_split)[0]])  # recursive paritioning #2
+        self.update_S(torch.arange(self.num_items, device=self.device)[torch.where(first_split)[0]])
+        self.update_S(torch.arange(self.num_items, device=self.device)[torch.where(~first_split)[0]])
 
         for ilist in self.item_list:
             self.item_similarity(ilist)

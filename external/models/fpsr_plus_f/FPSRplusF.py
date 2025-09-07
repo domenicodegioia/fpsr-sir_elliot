@@ -10,14 +10,14 @@ from elliot.dataset.samplers import custom_sampler as cs
 from elliot.recommender import BaseRecommenderModel
 from elliot.recommender.base_recommender_model import init_charger
 from elliot.recommender.recommender_utils_mixin import RecMixin
-from .FPSRplusModel import FPSRplusModel
+from .FPSRplusFModel import FPSRplusFModel
 from elliot.utils import logging as logging_project
 
 logger = logging_project.get_logger("__main__")
 
-class FPSRplus(RecMixin, BaseRecommenderModel):
+class FPSRplusF(RecMixin, BaseRecommenderModel):
     r"""
-    FPSR+_D: Toward Robust, Efficient, and Scalable Collaborative Filtering With Partition-Aware Item Similarity Modeling
+    FPSR+_F: Toward Robust, Efficient, and Scalable Collaborative Filtering With Partition-Aware Item Similarity Modeling
 
     For further details, please refer to the `paper <https://doi.org/10.1109/TKDE.2024.3418080>`_
 
@@ -37,7 +37,7 @@ class FPSRplus(RecMixin, BaseRecommenderModel):
     .. code:: yaml
 
       models:
-        external.FPSRplus:
+        external.FPSRplusF:
           meta:
             save_recs: True
           eigen_dim: 256
@@ -94,7 +94,7 @@ class FPSRplus(RecMixin, BaseRecommenderModel):
         self._inter = coo_matrix((np.ones_like(row, dtype=np.float64), (row, col)),
                                  shape=(self._num_users, self._num_items))
 
-        self._model = FPSRplusModel(
+        self._model = FPSRplusFModel(
             num_users=self._num_users,
             num_items=self._num_items,
             eigen_dim=self._eigen_dim,
@@ -112,7 +112,7 @@ class FPSRplus(RecMixin, BaseRecommenderModel):
 
     @property
     def name(self):
-        return "FPSRplus" \
+        return "FPSRplusF" \
             + f"_{self.get_params_shortcut()}"
 
     def train(self):

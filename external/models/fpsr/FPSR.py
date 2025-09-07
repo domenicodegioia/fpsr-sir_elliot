@@ -39,7 +39,6 @@ class FPSR(RecMixin, BaseRecommenderModel):
         external.FPSR:
           meta:
             save_recs: True
-                epochs: 2
           eigen_dim: 256
           l_w: 0.2
           rho: 500
@@ -110,7 +109,6 @@ class FPSR(RecMixin, BaseRecommenderModel):
     @property
     def name(self):
         return "FPSR" \
-            + f"_{self.get_base_params_shortcut()}" \
             + f"_{self.get_params_shortcut()}"
 
     def train(self):
@@ -146,10 +144,6 @@ class FPSR(RecMixin, BaseRecommenderModel):
         items_ratings_pair = [list(zip(map(self._data.private_items.get, u_list[0]), u_list[1]))
                               for u_list in list(zip(i.detach().cpu().numpy(), v.detach().cpu().numpy()))]
         return dict(zip(map(self._data.private_users.get, range(offset, offset_stop)), items_ratings_pair))
-
-
-    def restore_weights(self):
-        raise NotImplementedError
 
     def get_top_k(self, preds, train_mask, k=100):
         return torch.topk(torch.where(torch.tensor(train_mask).to(self.device), torch.tensor(preds).to(self.device),
