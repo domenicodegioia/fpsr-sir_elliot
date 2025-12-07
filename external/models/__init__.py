@@ -82,6 +82,7 @@ for _backend in sys.modules["external"].backend:
         from .MF2020 import MF2020
         # from .svdpp import SVDpp
         # from .lightgcl import LightGCL
+        from .pgsp import PGSP
         from .fagsp import FaGSP
         from .higsp import HiGSP
         from .chebycf import ChebyCF
